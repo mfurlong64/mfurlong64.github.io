@@ -4,6 +4,11 @@ body {
 	background-color: lightblue;
 }
 
+a:visited {
+	color: green;
+}
+
+
 #maintitle{
 	font-family: Tahoma;
 	border: 5px dotted white;
@@ -16,6 +21,7 @@ body {
 
 #secondtitle {
 	text-align: center;
+	text-shadow: white 3px 3px;
 
 }
 
@@ -23,15 +29,6 @@ h4.subtitle {
 	text-shadow: white 3px 3px;
 }
 
-.sidebar {
-	float: left;
-  	display: inline;
- 	vertical-align: left;
- 	float: left;
- 	list-style-type: none;
- 	padding-left: 10px;
- 	width: 50%;
-}
 
 #intro {
 	padding: 20px;
@@ -59,3 +56,14 @@ h4.subtitle {
 	margin-right: auto;
 	bottom: 0;
 }
+
+@media screen and (max-width: 550px) {
+  body {
+    background-color: lightgrey;
+    font-size: 120%;
+}
+  #links ul{
+    font-size: 120%;
+}
+  
+

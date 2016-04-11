@@ -1,0 +1,61 @@
+body {
+
+	font-family: Helvetica;
+	background-color: lightblue;
+}
+
+#maintitle{
+	font-family: Tahoma;
+	border: 5px dotted white;
+	padding: 10px;
+	margin-left: auto;
+	margin-right: auto;
+	text-align: center;
+	text-shadow: white 3px 3px;
+}
+
+#secondtitle {
+	text-align: center;
+
+}
+
+h4.subtitle {
+	text-shadow: white 3px 3px;
+}
+
+.sidebar {
+	float: left;
+  	display: inline;
+ 	vertical-align: left;
+ 	float: left;
+ 	list-style-type: none;
+ 	padding-left: 10px;
+ 	width: 50%;
+}
+
+#intro {
+	padding: 20px;
+	background-image: url("images/boardgames.png")
+}
+
+#intro {
+	color: white;
+	text-shadow: black 3px 3px;
+}
+
+#email {
+	position: relative;
+	bottom: 0;
+
+}
+
+#media {
+	margin-left: auto;
+	margin-right: auto;
+}
+
+#gameimage {
+	margin-left: auto;
+	margin-right: auto;
+	bottom: 0;
+}

@@ -2,55 +2,65 @@
 <html>
 <head>
 <style>
-body {background-color:lightgrey;}
+
 </style>
 	<title>Board Game Reviews by Michael</title>
+  <link rel="stylesheet" type="text/css" href="styling.css">
 </head>
 <body>
 
-	<h1 style="color:black">Board Game Reviews By Michael</h1><p></p>
+	<h1 id = "maintitle">Board Game Reviews By Michael</h1><p></p>
 
-	<p><h2>An average board gamer's insight on some popular titles!</h2></p>
+	<h2 id = "secondtitle">An average board gamer's insight on some popular titles</h2>
 
 	<fieldset>
 
-	<h4>Update 4/3/2016</h4><p></p>
-
-	<p>This site exists to show off some of the great games out currently out on the market! All reviews are under the scale 1 (the worst) to 10 (the best!). Three reviews have been added today with some great sports themed board games!</p>
-
+	<h4 class = "subtitle">Update 4/3/2016</h4>
+  <div id = "intro">
+	<p class = "introtext">This site exists to show off some of the great games out currently out on the market! All reviews are under the scale 1 (the worst) to 10 (the best!). Three reviews have been added today with some great sports themed board games!</p>
+  </div>
    </fieldset>
 
 
-		<div>
-	    <p><ul><h4>Latest Reviews</h4></p>
+		<div class = "sidebar">
+	    <h4 class = "subtitle">Latest Reviews</h4>
+      <ul>
     	<li><a href="star_realms.html">Star Realms Review</a> Posted (4/3/2016)</li>
     	<li><a href="baseball.html">Baseball Highlights 2045 Review</a> Posted (4/3/2016)</li>
     	<li><a href="dreadball.html">Dreadball Review</a> Posted (4/3/2016)</li></ul>
     	</div>
-    	<p></p>
+     <br>
 
-
-
+    <div id = "email">
     <form name="practice_form" action="success.html" method="post">
-    <h4>Join the test mailing list!</h4>
-    	  <div>
+    <h4 class = "subtitle">Join the test mailing list!</h4>
+        
 
       <label>Email:</label>
       <input type="email" name="mailing_list">
 
- 	 <button type="submit">Submit</button><p></p>
+   <button type="submit">Submit</button>
 
  	  </div>
-    <p></p>
+    <br>
     </form>
 
+    <br>
 
+    <h4 class = "subtitle">Learn to play board games</h4>
 
-    		<img src="images/boardgames.png" alt="board" />
+    <p> <strong>Watch It Played</strong> is a fantastic resource to learning how to play alls sorts of boardgames. Check out this video below on how to play Viticulture, the illustrious game of winemaking!</p>
+
+    <br>
+
+    <iframe id = "media" width="560" height="315" src="https://www.youtube.com/embed/L5fcDctkFFE" frameborder="0" allowfullscreen></iframe>
+  
 
 
 
     
-  
+  <footer>
+      <p class = "center"></p>
+  </footer>
 </body>
 </html>

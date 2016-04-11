@@ -37,6 +37,7 @@ h4.subtitle {
 
 #intro {
 	color: white;
+	margin: 10px;
 	text-shadow: black 3px 3px;
 }
 
@@ -64,4 +65,5 @@ h4.subtitle {
 }
   #links ul{
     font-size: 120%;
+}
 }

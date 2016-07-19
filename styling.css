@@ -43,6 +43,7 @@ h4.subtitle {
 
 #email {
 	position: relative;
+	float:left;
 	bottom: 0;
 
 }
@@ -58,12 +59,21 @@ h4.subtitle {
 	bottom: 0;
 }
 
+#media_desc {
+	float:left;
+	max-width: 200px;
+	border: 3px solid black;
+	margin: 20px;
+	padding: 10px;
+}
+
 @media screen and (max-width: 550px) {
   body {
-    background-color: lightgrey;
+  	background-color: lightgrey;
     font-size: 120%;
+    float: left;
 }
   #links ul{
     font-size: 120%;
 }
-}
+

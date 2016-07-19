@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<style>
+body {
+    text-align: center;
+    font-weight: bold;
+    font-family: "Tahoma";
+    background: #2c333a;
+    color: white;
+}
+canvas {
+    border:3px solid #4d5966;
+    background-color: black;
+    margin: 0 auto;
+    text-align: center;
+}
+</style>
+</head>
+<h1> Javascript Etch'n'Sketch </h1>
+<p> Use the Arrow Keys to Move the Marker</p>
+<body onload="startGame()">
+<div style="text-align:center;">
+<button onclick="restartgame()">SHAKE SHAKE SHAKE</button>
+<script>
+
+var mainHeroObject;
+
+function startGame() {
+    mainGameFrame.start();
+    mainHeroObject = new component(3, 3, "blue", 100, 240);
+}
+
+var mainGameFrame = {
+
+    canvas : document.createElement("canvas"),
+
+    start : function() {
+
+        this.canvas.height = 480;
+
+        this.canvas.width = 640;
+        
+        this.context = this.canvas.getContext("2d");
+
+        document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+
+        this.interval = setInterval(refreshGameFrame, 20);
+
+        window.addEventListener('keydown', function (action) {
+
+            mainGameFrame.keys = (mainGameFrame.keys || []);
+
+            mainGameFrame.keys[action.keyCode] = (action.type == "keydown");
+        })
+
+        window.addEventListener('keyup', function (action) {
+
+            mainGameFrame.keys[action.keyCode] = (action.type == "keydown");
+
+        })
+        
+    },
+    clear : function(){
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    }
+}
+
+function component(width, height, color, x, y) {
+    var randColor = ['##0d0d0d', '#004d99', '#0066cc', '#0080ff', '#3399ff']
+
+
+    this.gamearea = mainGameFrame;
+    this.width = width;
+    this.height = height;
+    this.angle = 0;
+
+    this.speedX = 10;
+    this.speedY = 0;
+
+    this.x = x;
+    this.y = y;
+    this.update = function() {
+        ctx = mainGameFrame.context;
+        ctx.fillStyle = randColor[Math.floor(Math.random() * randColor.length)];
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+    }
+
+    this.newPos = function() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+    }
+
+}
+
+function restartgame() {
+    mainGameFrame.clear();
+}
+
+
+function refreshGameFrame() {
+    // mainGameFrame.clear();
+
+    mainHeroObject.speedX = 0;
+    mainHeroObject.speedY = 0;
+
+    if (mainGameFrame.keys && mainGameFrame.keys[37]) {mainHeroObject.speedX = -3; }
+
+    if (mainGameFrame.keys && mainGameFrame.keys[39]) {mainHeroObject.speedX = 3; }
+
+    if (mainGameFrame.keys && mainGameFrame.keys[38]) {mainHeroObject.speedY = -3; }
+
+    if (mainGameFrame.keys && mainGameFrame.keys[40]) {mainHeroObject.speedY = 3; }
+    
+    mainHeroObject.newPos();
+    mainHeroObject.update();
+}
+</script>
+</div>
+</body>
+</html>
+

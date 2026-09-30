@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dashboards — construct analyst</title>
+<style>
+:root{
+  --surface:#f6f7f9; --card:#ffffff; --ink:#0d1220; --ink-2:#4a5266; --muted:#7a839a;
+  --border:#e2e6ee; --border-2:#eceff5; --accent:#0e7490; --accent-soft:#0e749015;
+  --grid:#eef1f6; --shadow:0 1px 2px rgba(13,18,32,.05),0 8px 24px rgba(13,18,32,.05);
+  --s1:#2a78d6;--s2:#eb6834;--s3:#1baf7a;--s4:#eda100;--s5:#e87ba4;--s6:#008300;--s7:#4a3aa7;--s8:#e34948;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,"JetBrains Mono",Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
+  --surface:#0f1117; --card:#171a24; --ink:#e8eaf6; --ink-2:#aab0c7; --muted:#7986cb;
+  --border:#262a38; --border-2:#20232f; --accent:#4fc3f7; --accent-soft:#4fc3f71f;
+  --grid:#20242f; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#e66767;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --surface:#0f1117; --card:#171a24; --ink:#e8eaf6; --ink-2:#aab0c7; --muted:#7986cb;
+  --border:#262a38; --border-2:#20232f; --accent:#4fc3f7; --accent-soft:#4fc3f71f;
+  --grid:#20242f; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  --s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s8:#e66767;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0}
+.page{background:var(--surface);color:var(--ink);font-family:var(--sans);
+  min-height:100vh;line-height:1.5;-webkit-font-smoothing:antialiased;
+  padding:0 clamp(16px,4vw,48px) 64px;}
+.topbar{display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+  padding:22px 0 18px;border-bottom:1px solid var(--border);position:sticky;top:0;
+  background:color-mix(in srgb,var(--surface) 88%,transparent);backdrop-filter:blur(8px);z-index:5;}
+.brand{display:flex;align-items:baseline;gap:7px;font-family:var(--mono)}
+.mark{font-weight:700;font-size:17px;letter-spacing:-.02em;color:var(--ink);}
+.mark::before{content:"▚ ";color:var(--accent);}
+.brand-sub{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.14em}
+.board-title{font-weight:650;font-size:15px;color:var(--ink-2);
+  border-left:1px solid var(--border);padding-left:24px;}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.generated{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+.theme-toggle{background:var(--card);border:1px solid var(--border);color:var(--ink-2);
+  width:34px;height:34px;border-radius:9px;cursor:pointer;font-size:15px;line-height:1;
+  display:grid;place-items:center;transition:border-color .15s,color .15s;}
+.theme-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.theme-toggle:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.summary{display:flex;flex-wrap:wrap;gap:14px;padding:22px 0}
+.sum{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  padding:12px 18px;min-width:120px;flex:1 1 auto;box-shadow:var(--shadow)}
+.sum-n{display:block;font-family:var(--mono);font-size:22px;font-weight:650;
+  letter-spacing:-.01em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.sum-l{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--muted);margin-top:3px}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:20px}
+.tile{background:var(--card);border:1px solid var(--border);border-radius:14px;
+  padding:18px 18px 14px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.tile-head h2{margin:0;font-size:15.5px;font-weight:650;letter-spacing:-.01em;
+  text-wrap:balance;color:var(--ink)}
+.tile-q{font-size:12px;color:var(--muted);margin-top:4px;font-family:var(--mono)}
+.chart-wrap{margin:14px 0 6px;overflow-x:auto}
+.chart{width:100%;height:auto;display:block}
+.tile-foot{display:flex;justify-content:space-between;align-items:center;
+  border-top:1px solid var(--border-2);padding-top:10px;margin-top:6px}
+.stats{font-family:var(--mono);font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sql{margin-top:10px}
+.sql summary{cursor:pointer;font-family:var(--mono);font-size:11px;color:var(--accent);
+  list-style:none;user-select:none}
+.sql summary::before{content:"› ";}
+.sql[open] summary::before{content:"⌄ ";}
+.sql pre{background:var(--surface);border:1px solid var(--border-2);border-radius:8px;
+  padding:12px;overflow-x:auto;font-family:var(--mono);font-size:11.5px;color:var(--ink-2);
+  margin:8px 0 2px;line-height:1.55}
+
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:2px 2px 4px}
+.lg-item{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-2);
+  font-family:var(--mono)}
+.lg-swatch{width:11px;height:11px;border-radius:3px;display:inline-block}
+
+.chart .grid{stroke:var(--grid);stroke-width:1}
+.chart .tick{fill:var(--muted);font-size:11px;font-family:var(--mono)}
+.chart .cat{fill:var(--ink-2);font-size:11px;font-family:var(--mono)}
+.chart .axtitle{fill:var(--muted);font-size:11px;font-family:var(--mono)}
+.chart .line{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.chart .hit{fill:transparent;stroke:none}
+.chart .hit:hover{fill:var(--ink);fill-opacity:.15}
+.minitable{overflow-x:auto}
+.minitable table{border-collapse:collapse;font-family:var(--mono);font-size:11.5px;width:100%}
+.minitable th{text-align:left;color:var(--muted);border-bottom:1px solid var(--border);
+  padding:5px 10px;font-weight:600}
+.minitable td{padding:4px 10px;border-bottom:1px solid var(--border-2);color:var(--ink-2);
+  font-variant-numeric:tabular-nums}
+
+.s1{--c:var(--s1)}.s2{--c:var(--s2)}.s3{--c:var(--s3)}.s4{--c:var(--s4)}
+.s5{--c:var(--s5)}.s6{--c:var(--s6)}.s7{--c:var(--s7)}.s8{--c:var(--s8)}
+.chart .line.s1{stroke:var(--s1)}.chart .line.s2{stroke:var(--s2)}
+.chart .line.s3{stroke:var(--s3)}.chart .line.s4{stroke:var(--s4)}
+.chart .endpoint.s1{fill:var(--s1)}.chart .endpoint.s2{fill:var(--s2)}
+.chart .endpoint.s3{fill:var(--s3)}.chart .endpoint.s4{fill:var(--s4)}
+.chart .bar.s1{fill:var(--s1)}.chart .bar.s2{fill:var(--s2)}.chart .bar.s3{fill:var(--s3)}
+.chart .bar.s4{fill:var(--s4)}.chart .bar.s5{fill:var(--s5)}.chart .bar.s6{fill:var(--s6)}
+.chart .bar.s7{fill:var(--s7)}.chart .bar.s8{fill:var(--s8)}
+.chart .dot.s1{fill:var(--s1);fill-opacity:.72}
+.lg-swatch.s1{background:var(--s1)}.lg-swatch.s2{background:var(--s2)}
+.lg-swatch.s3{background:var(--s3)}.lg-swatch.s4{background:var(--s4)}
+.lg-swatch.s5{background:var(--s5)}.lg-swatch.s6{background:var(--s6)}
+.lg-swatch.s7{background:var(--s7)}.lg-swatch.s8{background:var(--s8)}
+
+.section-title{font-size:13px;text-transform:uppercase;letter-spacing:.12em;
+  color:var(--muted);margin:44px 0 16px;font-weight:600}
+.insights{margin-top:8px}
+.insight-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.insight{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);
+  border-radius:10px;padding:16px 18px;box-shadow:var(--shadow)}
+.insight p{margin:0 0 12px;font-size:14px;color:var(--ink);line-height:1.6}
+.ins-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:10.5px;background:var(--accent-soft);color:var(--accent);
+  padding:2px 8px;border-radius:20px;letter-spacing:.02em}
+.ins-date{font-family:var(--mono);font-size:11px;color:var(--muted);margin-left:auto}
+.ins-src{font-size:11.5px;color:var(--muted);margin-top:8px;font-style:italic}
+
+.empty{color:var(--muted);text-align:center;padding:60px 0;font-family:var(--mono)}
+.pagefoot{margin-top:48px;padding-top:20px;border-top:1px solid var(--border);
+  font-family:var(--mono);font-size:11.5px;color:var(--muted);text-align:center}
+.pagefoot strong{color:var(--ink-2)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.hub-index[hidden]{display:none}
+.board-view[hidden]{display:none}
+.hub-hero{padding:36px 0 8px;max-width:70ch}
+.hub-eyebrow{font-family:var(--mono);font-size:11.5px;text-transform:uppercase;letter-spacing:.16em;color:var(--accent);font-weight:600}
+.hub-hero h1{font-size:clamp(28px,5vw,44px);font-weight:800;letter-spacing:-.02em;line-height:1.05;margin:12px 0 0;text-wrap:balance}
+.hub-hero p{font-size:15px;color:var(--muted);margin:12px 0 0;line-height:1.6}
+.hub-summary{max-width:520px}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;margin-top:24px}
+.hub-card{display:flex;flex-direction:column;justify-content:space-between;background:var(--card);
+  border:1px solid var(--border);border-radius:14px;padding:20px 20px 16px;box-shadow:var(--shadow);
+  text-decoration:none;color:inherit;transition:border-color .15s,transform .15s,box-shadow .15s;min-height:180px}
+.hub-card:hover{border-color:var(--accent);transform:translateY(-2px);
+  box-shadow:0 1px 2px rgba(0,0,0,.06),0 14px 34px rgba(0,0,0,.14)}
+.hub-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hub-card h3{margin:0 0 8px;font-size:17px;font-weight:700;letter-spacing:-.01em;color:var(--txt-strong,var(--accent))}
+.hub-card h3{color:var(--accent)}
+.hub-card p{margin:0 0 14px;font-size:13.5px;line-height:1.55;color:var(--muted)}
+.hub-chips{display:flex;gap:6px;flex-wrap:wrap}
+.hub-chip{font-family:var(--mono);font-size:10.5px;color:var(--muted);background:var(--surface);
+  border:1px solid var(--border);border-radius:6px;padding:2px 8px}
+.hub-open{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);margin-top:16px}
+.back-link{display:inline-block;font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);
+  text-decoration:none;margin:8px 0 6px}
+.back-link:hover{text-decoration:underline}
+.board-h1{font-size:clamp(24px,4vw,34px);font-weight:800;letter-spacing:-.02em;margin:8px 0 4px;text-wrap:balance}
+.board-desc{font-size:14px;color:var(--muted);margin:0 0 8px;max-width:74ch;line-height:1.55}
+</style>
+<div class="page">
+  <header class="topbar">
+    <div class="brand"><span class="mark">construct</span><span class="brand-sub">analyst</span></div>
+    <div class="board-title" id="crumb">Dashboards</div>
+    <div class="topbar-right">
+      <span class="generated">Updated July 21, 2026</span>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">◐</button>
+    </div>
+  </header>
+
+  <section class="hub-index" id="hub-index">
+    <div class="hub-hero">
+      <div class="hub-eyebrow">Dashboard index</div>
+      <h1>Dashboards</h1>
+      <p>Published analytics from construct-analyst — pick a board to explore.</p>
+    </div>
+    <div class="summary hub-summary"><div class="sum"><span class="sum-n">3</span><span class="sum-l">dashboards</span></div><div class="sum"><span class="sum-n">10</span><span class="sum-l">tiles</span></div><div class="sum"><span class="sum-n">7</span><span class="sum-l">insights</span></div></div>
+    <div class="hub-grid">
+      <a class="hub-card" href="#macro">
+  <div class="hub-card-body">
+    <h3>Macro &amp; Environment Monitor</h3>
+    <p>A cross-domain pulse: recession chatter on Hacker News, air quality, global GDP growth, and housing risk.</p>
+    <div class="hub-chips"><span class="hub-chip">4 tiles</span><span class="hub-chip">3 insights</span><span class="hub-chip">4.93 GB</span></div>
+  </div>
+  <div class="hub-open">Open dashboard <span aria-hidden="true">→</span></div>
+</a>
+<a class="hub-card" href="#housing">
+  <div class="hub-card-body">
+    <h3>US Housing &amp; Mortgage Stress</h3>
+    <p>Home-price momentum, a composite housing-risk score, and the renter cost-burden picture over 15 years.</p>
+    <div class="hub-chips"><span class="hub-chip">3 tiles</span><span class="hub-chip">2 insights</span><span class="hub-chip">0.22 GB</span></div>
+  </div>
+  <div class="hub-open">Open dashboard <span aria-hidden="true">→</span></div>
+</a>
+<a class="hub-card" href="#air">
+  <div class="hub-card-body">
+    <h3>Global Air Quality Watch</h3>
+    <p>PM2.5 pollution by country and city, and the India-vs-US gap over time — from the OpenAQ public dataset.</p>
+    <div class="hub-chips"><span class="hub-chip">3 tiles</span><span class="hub-chip">2 insights</span><span class="hub-chip">0.28 GB</span></div>
+  </div>
+  <div class="hub-open">Open dashboard <span aria-hidden="true">→</span></div>
+</a>
+    </div>
+  </section>
+
+  <section class="board-view" id="view-macro" hidden>
+  <a class="back-link" href="#">← All dashboards</a>
+  <h1 class="board-h1">Macro &amp; Environment Monitor</h1>
+  <p class="board-desc">A cross-domain pulse: recession chatter on Hacker News, air quality, global GDP growth, and housing risk.</p>
+  <div class="summary"><div class="sum"><span class="sum-n">4</span><span class="sum-l">tiles</span></div><div class="sum"><span class="sum-n">81</span><span class="sum-l">rows</span></div><div class="sum"><span class="sum-n">4.93</span><span class="sum-l">GB scanned</span></div><div class="sum"><span class="sum-n">2026-07-20 → 2026-07-20</span><span class="sum-l">date range</span></div></div>
+  <main class="grid">
+    <article class="tile">
+  <header class="tile-head">
+    <h2>Recession chatter on Hacker News</h2>
+    <div class="tile-q">How often do recession-signal keywords appear in HN stories per day?</div>
+  </header>
+  <div class="chart-wrap"><svg viewBox="0 0 720 380" class="chart" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="60" y1="336.0" x2="702" y2="336.0"/><text class="tick" x="52" y="339.0" text-anchor="end">0</text><line class="grid" x1="60" y1="230.0" x2="702" y2="230.0"/><text class="tick" x="52" y="233.0" text-anchor="end">2</text><line class="grid" x1="60" y1="124.0" x2="702" y2="124.0"/><text class="tick" x="52" y="127.0" text-anchor="end">4</text><line class="grid" x1="60" y1="18.0" x2="702" y2="18.0"/><text class="tick" x="52" y="21.0" text-anchor="end">6</text><text class="tick" x="60.0" y="354" text-anchor="start">May 26</text><text class="tick" x="158.8" y="354" text-anchor="middle">May 28</text><text class="tick" x="257.5" y="354" text-anchor="middle">May 30</text><text class="tick" x="356.3" y="354" text-anchor="middle">Jun 01</text><text class="tick" x="455.1" y="354" text-anchor="middle">Jun 03</text><text class="tick" x="553.8" y="354" text-anchor="middle">Jun 05</text><text class="tick" x="652.6" y="354" text-anchor="middle">Jun 07</text><text class="tick" x="702.0" y="354" text-anchor="end">Jun 08</text><path class="line s1" d="M60.0 230.0 L109.4 177.0 L158.8 18.0 L208.2 124.0 L257.5 124.0 L306.9 283.0 L356.3 18.0 L405.7 283.0 L455.1 230.0 L504.5 283.0 L553.8 124.0 L603.2 230.0 L652.6 336.0 L702.0 336.0"/><circle class="endpoint s1" cx="702.0" cy="336.0" r="3.5"/><circle class="hit" cx="60.0" cy="230.0" r="7"><title>layoffs · May 26: 2</title></circle><circle class="hit" cx="109.4" cy="177.0" r="7"><title>layoffs · May 27: 3</title></circle><circle class="hit" cx="158.8" cy="18.0" r="7"><title>layoffs · May 28: 6</title></circle><circle class="hit" cx="208.2" cy="124.0" r="7"><title>layoffs · May 29: 4</title></circle><circle class="hit" cx="257.5" cy="124.0" r="7"><title>layoffs · May 30: 4</title></circle><circle class="hit" cx="306.9" cy="283.0" r="7"><title>layoffs · May 31: 1</title></circle><circle class="hit" cx="356.3" cy="18.0" r="7"><title>layoffs · Jun 01: 6</title></circle><circle class="hit" cx="405.7" cy="283.0" r="7"><title>layoffs · Jun 02: 1</title></circle><circle class="hit" cx="455.1" cy="230.0" r="7"><title>layoffs · Jun 03: 2</title></circle><circle class="hit" cx="504.5" cy="283.0" r="7"><title>layoffs · Jun 04: 1</title></circle><circle class="hit" cx="553.8" cy="124.0" r="7"><title>layoffs · Jun 05: 4</title></circle><circle class="hit" cx="603.2" cy="230.0" r="7"><title>layoffs · Jun 06: 2</title></circle><circle class="hit" cx="652.6" cy="336.0" r="7"><title>layoffs · Jun 07: 0</title></circle><circle class="hit" cx="702.0" cy="336.0" r="7"><title>layoffs · Jun 08: 0</title></circle><path class="line s2" d="M60.0 336.0 L109.4 283.0 L158.8 336.0 L208.2 177.0 L257.5 336.0 L306.9 336.0 L356.3 283.0 L405.7 336.0 L455.1 336.0 L504.5 336.0 L553.8 336.0 L603.2 336.0 L652.6 336.0 L702.0 336.0"/><circle class="endpoint s2" cx="702.0" cy="336.0" r="3.5"/><circle class="hit" cx="60.0" cy="336.0" r="7"><title>recession · May 26: 0</title></circle><circle class="hit" cx="109.4" cy="283.0" r="7"><title>recession · May 27: 1</title></circle><circle class="hit" cx="158.8" cy="336.0" r="7"><title>recession · May 28: 0</title></circle><circle class="hit" cx="208.2" cy="177.0" r="7"><title>recession · May 29: 3</title></circle><circle class="hit" cx="257.5" cy="336.0" r="7"><title>recession · May 30: 0</title></circle><circle class="hit" cx="306.9" cy="336.0" r="7"><title>recession · May 31: 0</title></circle><circle class="hit" cx="356.3" cy="283.0" r="7"><title>recession · Jun 01: 1</title></circle><circle class="hit" cx="405.7" cy="336.0" r="7"><title>recession · Jun 02: 0</title></circle><circle class="hit" cx="455.1" cy="336.0" r="7"><title>recession · Jun 03: 0</title></circle><circle class="hit" cx="504.5" cy="336.0" r="7"><title>recession · Jun 04: 0</title></circle><circle class="hit" cx="553.8" cy="336.0" r="7"><title>recession · Jun 05: 0</title></circle><circle class="hit" cx="603.2" cy="336.0" r="7"><title>recession · Jun 06: 0</title></circle><circle class="hit" cx="652.6" cy="336.0" r="7"><title>recession · Jun 07: 0</title></circle><circle class="hit" cx="702.0" cy="336.0" r="7"><title>recession · Jun 08: 0</title></circle><path class="line s3" d="M60.0 283.0 L109.4 336.0 L158.8 283.0 L208.2 336.0 L257.5 336.0 L306.9 336.0 L356.3 336.0 L405.7 283.0 L455.1 336.0 L504.5 336.0 L553.8 283.0 L603.2 283.0 L652.6 230.0 L702.0 336.0"/><circle class="endpoint s3" cx="702.0" cy="336.0" r="3.5"/><circle class="hit" cx="60.0" cy="283.0" r="7"><title>unemployment · May 26: 1</title></circle><circle class="hit" cx="109.4" cy="336.0" r="7"><title>unemployment · May 27: 0</title></circle><circle class="hit" cx="158.8" cy="283.0" r="7"><title>unemployment · May 28: 1</title></circle><circle class="hit" cx="208.2" cy="336.0" r="7"><title>unemployment · May 29: 0</title></circle><circle class="hit" cx="257.5" cy="336.0" r="7"><title>unemployment · May 30: 0</title></circle><circle class="hit" cx="306.9" cy="336.0" r="7"><title>unemployment · May 31: 0</title></circle><circle class="hit" cx="356.3" cy="336.0" r="7"><title>unemployment · Jun 01: 0</title></circle><circle class="hit" cx="405.7" cy="283.0" r="7"><title>unemployment · Jun 02: 1</title></circle><circle class="hit" cx="455.1" cy="336.0" r="7"><title>unemployment · Jun 03: 0</title></circle><circle class="hit" cx="504.5" cy="336.0" r="7"><title>unemployment · Jun 04: 0</title></circle><circle class="hit" cx="553.8" cy="283.0" r="7"><title>unemployment · Jun 05: 1</title></circle><circle class="hit" cx="603.2" cy="283.0" r="7"><title>unemployment · Jun 06: 1</title></circle><circle class="hit" cx="652.6" cy="230.0" r="7"><title>unemployment · Jun 07: 2</title></circle><circle class="hit" cx="702.0" cy="336.0" r="7"><title>unemployment · Jun 08: 0</title></circle><path class="line s4" d="M60.0 336.0 L109.4 336.0 L158.8 71.0 L208.2 336.0 L257.5 336.0 L306.9 336.0 L356.3 283.0 L405.7 283.0 L455.1 177.0 L504.5 336.0 L553.8 336.0 L603.2 336.0 L652.6 336.0 L702.0 336.0"/><circle class="endpoint s4" cx="702.0" cy="336.0" r="3.5"/><circle class="hit" cx="60.0" cy="336.0" r="7"><title>bankruptcy · May 26: 0</title></circle><circle class="hit" cx="109.4" cy="336.0" r="7"><title>bankruptcy · May 27: 0</title></circle><circle class="hit" cx="158.8" cy="71.0" r="7"><title>bankruptcy · May 28: 5</title></circle><circle class="hit" cx="208.2" cy="336.0" r="7"><title>bankruptcy · May 29: 0</title></circle><circle class="hit" cx="257.5" cy="336.0" r="7"><title>bankruptcy · May 30: 0</title></circle><circle class="hit" cx="306.9" cy="336.0" r="7"><title>bankruptcy · May 31: 0</title></circle><circle class="hit" cx="356.3" cy="283.0" r="7"><title>bankruptcy · Jun 01: 1</title></circle><circle class="hit" cx="405.7" cy="283.0" r="7"><title>bankruptcy · Jun 02: 1</title></circle><circle class="hit" cx="455.1" cy="177.0" r="7"><title>bankruptcy · Jun 03: 3</title></circle><circle class="hit" cx="504.5" cy="336.0" r="7"><title>bankruptcy · Jun 04: 0</title></circle><circle class="hit" cx="553.8" cy="336.0" r="7"><title>bankruptcy · Jun 05: 0</title></circle><circle class="hit" cx="603.2" cy="336.0" r="7"><title>bankruptcy · Jun 06: 0</title></circle><circle class="hit" cx="652.6" cy="336.0" r="7"><title>bankruptcy · Jun 07: 0</title></circle><circle class="hit" cx="702.0" cy="336.0" r="7"><title>bankruptcy · Jun 08: 0</title></circle></svg></div>
+  <div class="legend"><span class="lg-item"><span class="lg-swatch s1"></span>layoffs</span><span class="lg-item"><span class="lg-swatch s2"></span>recession</span><span class="lg-item"><span class="lg-swatch s3"></span>unemployment</span><span class="lg-item"><span class="lg-swatch s4"></span>bankruptcy</span></div>
+  <footer class="tile-foot">
+    <span class="stats">14 rows · 4.812 GB scanned</span>
+  </footer>
+  <details class='sql'><summary>SQL</summary><pre>SELECT DATE(timestamp) AS day,
+  COUNTIF(REGEXP_CONTAINS(LOWER(title),&#x27;layoff&#x27;)) AS layoffs,
+  COUNTIF(REGEXP_CONTAINS(LOWER(title),&#x27;recession&#x27;)) AS recession,
+  COUNTIF(REGEXP_CONTAINS(LOWER(title),&#x27;unemployment&#x27;)) AS unemployment,
+  COUNTIF(REGEXP_CONTAINS(LOWER(title),&#x27;bankrupt&#x27;)) AS bankruptcy
+FROM `bigquery-public-data.hacker_news.full`
+WHERE DATE(timestamp) &gt;= DATE_SUB(CURRENT_DATE(), INTERVAL 14 DAY)
+GROUP BY day ORDER BY day</pre></details>
+</article>
+<article class="tile">
+  <header class="tile-head">
+    <h2>Air quality: worst countries by PM2.5</h2>
+    <div class="tile-q">Which countries have the highest average PM2.5 readings?</div>
+  </header>
+  <div class="chart-wrap"><svg viewBox="0 0 720 380" class="chart" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="148.0" y1="18" x2="148.0" y2="336.0"/><text class="tick" x="148.0" y="354" text-anchor="middle">0</text><line class="grid" x1="279.4" y1="18" x2="279.4" y2="336.0"/><text class="tick" x="279.4" y="354" text-anchor="middle">25</text><line class="grid" x1="410.8" y1="18" x2="410.8" y2="336.0"/><text class="tick" x="410.8" y="354" text-anchor="middle">50</text><line class="grid" x1="542.2" y1="18" x2="542.2" y2="336.0"/><text class="tick" x="542.2" y="354" text-anchor="middle">75</text><line class="grid" x1="673.6" y1="18" x2="673.6" y2="336.0"/><text class="tick" x="673.6" y="354" text-anchor="middle">100</text><rect class="bar s1" x="148.0" y="23.0" width="554.0" height="16.4" rx="3"><title>AE: 105.4</title></rect><text class="cat" x="140" y="34.2" text-anchor="end">AE</text><rect class="bar s1" x="148.0" y="49.5" width="367.9" height="16.4" rx="3"><title>PK: 70</title></rect><text class="cat" x="140" y="60.8" text-anchor="end">PK</text><rect class="bar s1" x="148.0" y="76.0" width="311.7" height="16.4" rx="3"><title>IN: 59.3</title></rect><text class="cat" x="140" y="87.2" text-anchor="end">IN</text><rect class="bar s1" x="148.0" y="102.5" width="220.2" height="16.4" rx="3"><title>CL: 41.9</title></rect><text class="cat" x="140" y="113.8" text-anchor="end">CL</text><rect class="bar s1" x="148.0" y="129.0" width="209.2" height="16.4" rx="3"><title>PE: 39.8</title></rect><text class="cat" x="140" y="140.2" text-anchor="end">PE</text><rect class="bar s1" x="148.0" y="155.5" width="136.7" height="16.4" rx="3"><title>CN: 26</title></rect><text class="cat" x="140" y="166.8" text-anchor="end">CN</text><rect class="bar s1" x="148.0" y="182.0" width="124.6" height="16.4" rx="3"><title>MX: 23.7</title></rect><text class="cat" x="140" y="193.2" text-anchor="end">MX</text><rect class="bar s1" x="148.0" y="208.5" width="121.4" height="16.4" rx="3"><title>CH: 23.1</title></rect><text class="cat" x="140" y="219.8" text-anchor="end">CH</text><rect class="bar s1" x="148.0" y="235.0" width="118.3" height="16.4" rx="3"><title>ZA: 22.5</title></rect><text class="cat" x="140" y="246.2" text-anchor="end">ZA</text><rect class="bar s1" x="148.0" y="261.5" width="103.5" height="16.4" rx="3"><title>GT: 19.7</title></rect><text class="cat" x="140" y="272.8" text-anchor="end">GT</text><rect class="bar s1" x="148.0" y="288.0" width="97.2" height="16.4" rx="3"><title>TH: 18.5</title></rect><text class="cat" x="140" y="299.2" text-anchor="end">TH</text><rect class="bar s1" x="148.0" y="314.5" width="84.6" height="16.4" rx="3"><title>IT: 16.1</title></rect><text class="cat" x="140" y="325.8" text-anchor="end">IT</text></svg></div>
+  
+  <footer class="tile-foot">
+    <span class="stats">12 rows · 0.089 GB scanned · cached</span>
+  </footer>
+  <details class='sql'><summary>SQL</summary><pre>SELECT country, ROUND(AVG(value),1) AS avg_pm25, COUNT(*) AS readings
+FROM `bigquery-public-data.openaq.global_air_quality`
+WHERE parameter = &#x27;pm25&#x27; AND value BETWEEN 0 AND 1000
+GROUP BY country HAVING readings &gt; 500
+ORDER BY avg_pm25 DESC LIMIT 12</pre></details>
+</article>
+<article class="tile">
+  <header class="tile-head">
+    <h2>GDP growth: China vs USA vs Germany</h2>
+    <div class="tile-q">How has annual GDP growth compared across three major economies?</div>
+  </header>
+  <div class="chart-wrap"><svg viewBox="0 0 720 380" class="chart" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="60" y1="336.0" x2="702" y2="336.0"/><text class="tick" x="52" y="339.0" text-anchor="end">-5</text><line class="grid" x1="60" y1="272.4" x2="702" y2="272.4"/><text class="tick" x="52" y="275.4" text-anchor="end">-2.5</text><line class="grid" x1="60" y1="208.8" x2="702" y2="208.8"/><text class="tick" x="52" y="211.8" text-anchor="end">0</text><line class="grid" x1="60" y1="145.2" x2="702" y2="145.2"/><text class="tick" x="52" y="148.2" text-anchor="end">2.5</text><line class="grid" x1="60" y1="81.6" x2="702" y2="81.6"/><text class="tick" x="52" y="84.6" text-anchor="end">5</text><line class="grid" x1="60" y1="18.0" x2="702" y2="18.0"/><text class="tick" x="52" y="21.0" text-anchor="end">7.5</text><text class="tick" x="60.0" y="354" text-anchor="start">2015</text><text class="tick" x="188.4" y="354" text-anchor="middle">2016</text><text class="tick" x="316.8" y="354" text-anchor="middle">2017</text><text class="tick" x="445.2" y="354" text-anchor="middle">2018</text><text class="tick" x="573.6" y="354" text-anchor="middle">2019</text><text class="tick" x="702.0" y="354" text-anchor="end">2020</text><path class="line s1" d="M60.0 29.7 L188.4 34.5 L316.8 32.0 L445.2 37.1 L573.6 57.4 L702.0 149.0"/><circle class="endpoint s1" cx="702.0" cy="149.0" r="3.5"/><circle class="hit" cx="60.0" cy="29.7" r="7"><title>China · 2015: 7.04</title></circle><circle class="hit" cx="188.4" cy="34.5" r="7"><title>China · 2016: 6.85</title></circle><circle class="hit" cx="316.8" cy="32.0" r="7"><title>China · 2017: 6.95</title></circle><circle class="hit" cx="445.2" cy="37.1" r="7"><title>China · 2018: 6.75</title></circle><circle class="hit" cx="573.6" cy="57.4" r="7"><title>China · 2019: 5.95</title></circle><circle class="hit" cx="702.0" cy="149.0" r="7"><title>China · 2020: 2.35</title></circle><path class="line s2" d="M60.0 170.9 L188.4 152.1 L316.8 140.6 L445.2 181.1 L573.6 181.8 L702.0 325.1"/><circle class="endpoint s2" cx="702.0" cy="325.1" r="3.5"/><circle class="hit" cx="60.0" cy="170.9" r="7"><title>Germany · 2015: 1.49</title></circle><circle class="hit" cx="188.4" cy="152.1" r="7"><title>Germany · 2016: 2.23</title></circle><circle class="hit" cx="316.8" cy="140.6" r="7"><title>Germany · 2017: 2.68</title></circle><circle class="hit" cx="445.2" cy="181.1" r="7"><title>Germany · 2018: 1.09</title></circle><circle class="hit" cx="573.6" cy="181.8" r="7"><title>Germany · 2019: 1.06</title></circle><circle class="hit" cx="702.0" cy="325.1" r="7"><title>Germany · 2020: -4.57</title></circle><path class="line s3" d="M60.0 130.4 L188.4 165.3 L316.8 149.5 L445.2 132.5 L573.6 153.8 L702.0 295.3"/><circle class="endpoint s3" cx="702.0" cy="295.3" r="3.5"/><circle class="hit" cx="60.0" cy="130.4" r="7"><title>USA · 2015: 3.08</title></circle><circle class="hit" cx="188.4" cy="165.3" r="7"><title>USA · 2016: 1.71</title></circle><circle class="hit" cx="316.8" cy="149.5" r="7"><title>USA · 2017: 2.33</title></circle><circle class="hit" cx="445.2" cy="132.5" r="7"><title>USA · 2018: 3</title></circle><circle class="hit" cx="573.6" cy="153.8" r="7"><title>USA · 2019: 2.16</title></circle><circle class="hit" cx="702.0" cy="295.3" r="7"><title>USA · 2020: -3.4</title></circle></svg></div>
+  <div class="legend"><span class="lg-item"><span class="lg-swatch s1"></span>China</span><span class="lg-item"><span class="lg-swatch s2"></span>Germany</span><span class="lg-item"><span class="lg-swatch s3"></span>USA</span></div>
+  <footer class="tile-foot">
+    <span class="stats">18 rows · 0.021 GB scanned</span>
+  </footer>
+  <details class='sql'><summary>SQL</summary><pre>SELECT country_name, year, ROUND(value,2) AS gdp_growth
+FROM `bigquery-public-data.world_bank_wdi.indicators_data`
+WHERE indicator_code = &#x27;NY.GDP.MKTP.KD.ZG&#x27;
+  AND country_name IN (&#x27;China&#x27;,&#x27;United States&#x27;,&#x27;Germany&#x27;)
+  AND year BETWEEN 2015 AND 2020
+ORDER BY country_name, year</pre></details>
+</article>
+<article class="tile">
+  <header class="tile-head">
+    <h2>US housing stress index</h2>
+    <div class="tile-q">How has the composite housing-risk score trended since 2010?</div>
+  </header>
+  <div class="chart-wrap"><svg viewBox="0 0 720 380" class="chart" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="60" y1="336.0" x2="702" y2="336.0"/><text class="tick" x="52" y="339.0" text-anchor="end">0</text><line class="grid" x1="60" y1="272.4" x2="702" y2="272.4"/><text class="tick" x="52" y="275.4" text-anchor="end">0.2</text><line class="grid" x1="60" y1="208.8" x2="702" y2="208.8"/><text class="tick" x="52" y="211.8" text-anchor="end">0.4</text><line class="grid" x1="60" y1="145.2" x2="702" y2="145.2"/><text class="tick" x="52" y="148.2" text-anchor="end">0.6</text><line class="grid" x1="60" y1="81.6" x2="702" y2="81.6"/><text class="tick" x="52" y="84.6" text-anchor="end">0.8</text><line class="grid" x1="60" y1="18.0" x2="702" y2="18.0"/><text class="tick" x="52" y="21.0" text-anchor="end">1</text><text class="tick" x="60.0" y="354" text-anchor="start">Jan 2010</text><text class="tick" x="167.0" y="354" text-anchor="middle">Jul 2011</text><text class="tick" x="274.0" y="354" text-anchor="middle">Jan 2013</text><text class="tick" x="381.0" y="354" text-anchor="middle">Jul 2014</text><text class="tick" x="488.0" y="354" text-anchor="middle">Jan 2016</text><text class="tick" x="595.0" y="354" text-anchor="middle">Jul 2017</text><text class="tick" x="702.0" y="354" text-anchor="end">Jan 2019</text><path class="line s1" d="M60.0 41.5 L77.8 38.4 L95.7 43.1 L113.5 51.7 L131.3 61.2 L149.2 153.8 L167.0 281.9 L184.8 308.3 L202.7 317.2 L220.5 321.4 L238.3 323.6 L256.2 323.3 L274.0 322.0 L291.8 319.5 L309.7 313.7 L327.5 310.2 L345.3 310.2 L363.2 311.8 L381.0 314.4 L398.8 316.0 L416.7 316.3 L434.5 317.2 L452.3 317.6 L470.2 317.9 L488.0 318.5 L505.8 319.5 L523.7 320.1 L541.5 320.4 L559.3 321.4 L577.2 321.4 L595.0 320.1 L612.8 317.9 L630.7 318.5 L648.5 318.5 L666.3 318.5 L684.2 317.9 L702.0 317.6"/><circle class="endpoint s1" cx="702.0" cy="317.6" r="3.5"/><circle class="hit" cx="60.0" cy="41.5" r="7"><title>risk_score · Jan 2010: 0.93</title></circle><circle class="hit" cx="77.8" cy="38.4" r="7"><title>risk_score · Apr 2010: 0.94</title></circle><circle class="hit" cx="95.7" cy="43.1" r="7"><title>risk_score · Jul 2010: 0.92</title></circle><circle class="hit" cx="113.5" cy="51.7" r="7"><title>risk_score · Oct 2010: 0.89</title></circle><circle class="hit" cx="131.3" cy="61.2" r="7"><title>risk_score · Jan 2011: 0.86</title></circle><circle class="hit" cx="149.2" cy="153.8" r="7"><title>risk_score · Apr 2011: 0.57</title></circle><circle class="hit" cx="167.0" cy="281.9" r="7"><title>risk_score · Jul 2011: 0.17</title></circle><circle class="hit" cx="184.8" cy="308.3" r="7"><title>risk_score · Oct 2011: 0.09</title></circle><circle class="hit" cx="202.7" cy="317.2" r="7"><title>risk_score · Jan 2012: 0.06</title></circle><circle class="hit" cx="220.5" cy="321.4" r="7"><title>risk_score · Apr 2012: 0.05</title></circle><circle class="hit" cx="238.3" cy="323.6" r="7"><title>risk_score · Jul 2012: 0.04</title></circle><circle class="hit" cx="256.2" cy="323.3" r="7"><title>risk_score · Oct 2012: 0.04</title></circle><circle class="hit" cx="274.0" cy="322.0" r="7"><title>risk_score · Jan 2013: 0.04</title></circle><circle class="hit" cx="291.8" cy="319.5" r="7"><title>risk_score · Apr 2013: 0.05</title></circle><circle class="hit" cx="309.7" cy="313.7" r="7"><title>risk_score · Jul 2013: 0.07</title></circle><circle class="hit" cx="327.5" cy="310.2" r="7"><title>risk_score · Oct 2013: 0.08</title></circle><circle class="hit" cx="345.3" cy="310.2" r="7"><title>risk_score · Jan 2014: 0.08</title></circle><circle class="hit" cx="363.2" cy="311.8" r="7"><title>risk_score · Apr 2014: 0.08</title></circle><circle class="hit" cx="381.0" cy="314.4" r="7"><title>risk_score · Jul 2014: 0.07</title></circle><circle class="hit" cx="398.8" cy="316.0" r="7"><title>risk_score · Oct 2014: 0.06</title></circle><circle class="hit" cx="416.7" cy="316.3" r="7"><title>risk_score · Jan 2015: 0.06</title></circle><circle class="hit" cx="434.5" cy="317.2" r="7"><title>risk_score · Apr 2015: 0.06</title></circle><circle class="hit" cx="452.3" cy="317.6" r="7"><title>risk_score · Jul 2015: 0.06</title></circle><circle class="hit" cx="470.2" cy="317.9" r="7"><title>risk_score · Oct 2015: 0.06</title></circle><circle class="hit" cx="488.0" cy="318.5" r="7"><title>risk_score · Jan 2016: 0.06</title></circle><circle class="hit" cx="505.8" cy="319.5" r="7"><title>risk_score · Apr 2016: 0.05</title></circle><circle class="hit" cx="523.7" cy="320.1" r="7"><title>risk_score · Jul 2016: 0.05</title></circle><circle class="hit" cx="541.5" cy="320.4" r="7"><title>risk_score · Oct 2016: 0.05</title></circle><circle class="hit" cx="559.3" cy="321.4" r="7"><title>risk_score · Jan 2017: 0.05</title></circle><circle class="hit" cx="577.2" cy="321.4" r="7"><title>risk_score · Apr 2017: 0.05</title></circle><circle class="hit" cx="595.0" cy="320.1" r="7"><title>risk_score · Jul 2017: 0.05</title></circle><circle class="hit" cx="612.8" cy="317.9" r="7"><title>risk_score · Oct 2017: 0.06</title></circle><circle class="hit" cx="630.7" cy="318.5" r="7"><title>risk_score · Jan 2018: 0.06</title></circle><circle class="hit" cx="648.5" cy="318.5" r="7"><title>risk_score · Apr 2018: 0.06</title></circle><circle class="hit" cx="666.3" cy="318.5" r="7"><title>risk_score · Jul 2018: 0.06</title></circle><circle class="hit" cx="684.2" cy="317.9" r="7"><title>risk_score · Oct 2018: 0.06</title></circle><circle class="hit" cx="702.0" cy="317.6" r="7"><title>risk_score · Jan 2019: 0.06</title></circle></svg></div>
+  
+  <footer class="tile-foot">
+    <span class="stats">37 rows · 0.004 GB scanned · cached</span>
+  </footer>
+  <details class='sql'><summary>SQL</summary><pre>SELECT month, ROUND(risk_score,3) AS risk_score
+FROM `project.housing.stress_index`
+ORDER BY month</pre></details>
+</article>
+  </main>
+  <section class="insights">
+  <h2 class="section-title">Insights</h2>
+  <div class="insight-list"><div class="insight">
+  <p>Layoff mentions on HN spiked to 6/day mid-cycle while overall story volume stayed flat (~1,150/day) — sentiment moving independent of traffic.</p>
+  <div class="ins-meta"><span class="tag">macro</span><span class="tag">sentiment</span><span class="tag">hacker-news</span><span class="ins-date">2026-07-20</span></div>
+  <div class="ins-src">from “How often do recession-signal keywords appear in HN stories per day?”</div>
+</div>
+<div class="insight">
+  <p>The three highest-PM2.5 countries all exceed 70 µg/m³ — roughly 5× the WHO 24-hour guideline of 15 µg/m³.</p>
+  <div class="ins-meta"><span class="tag">air-quality</span><span class="tag">public-health</span><span class="ins-date">2026-07-20</span></div>
+  <div class="ins-src">from “Which countries have the highest average PM2.5 readings?”</div>
+</div>
+<div class="insight">
+  <p>In the 2020 shock China held positive growth (+2.35%) while the US (−3.4%) and Germany (−4.57%) both contracted — a divergence that reshaped 2021 supply-chain planning.</p>
+  <div class="ins-meta"><span class="tag">gdp</span><span class="tag">macro</span><span class="tag">world-bank</span><span class="ins-date">2026-07-20</span></div>
+  <div class="ins-src">from “How has annual GDP growth compared across three major economies?”</div>
+</div></div>
+</section>
+</section>
+<section class="board-view" id="view-housing" hidden>
+  <a class="back-link" href="#">← All dashboards</a>
+  <h1 class="board-h1">US Housing &amp; Mortgage Stress</h1>
+  <p class="board-desc">Home-price momentum, a composite housing-risk score, and the renter cost-burden picture over 15 years.</p>
+  <div class="summary"><div class="sum"><span class="sum-n">3</span><span class="sum-l">tiles</span></div><div class="sum"><span class="sum-n">50</span><span class="sum-l">rows</span></div><div class="sum"><span class="sum-n">0.22</span><span class="sum-l">GB scanned</span></div><div class="sum"><span class="sum-n">2026-07-21 → 2026-07-21</span><span class="sum-l">date range</span></div></div>
+  <main class="grid">
+    <article class="tile">
+  <header class="tile-head">
+    <h2>Housing stress index</h2>
+    <div class="tile-q">How has the composite housing-risk score trended since 2010?</div>
+  </header>
+  <div class="chart-wrap"><svg viewBox="0 0 720 380" class="chart" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="60" y1="336.0" x2="702" y2="336.0"/><text class="tick" x="52" y="339.0" text-anchor="end">0</text><line class="grid" x1="60" y1="272.4" x2="702" y2="272.4"/><text class="tick" x="52" y="275.4" text-anchor="end">0.2</text><line class="grid" x1="60" y1="208.8" x2="702" y2="208.8"/><text class="tick" x="52" y="211.8" text-anchor="end">0.4</text><line class="grid" x1="60" y1="145.2" x2="702" y2="145.2"/><text class="tick" x="52" y="148.2" text-anchor="end">0.6</text><line class="grid" x1="60" y1="81.6" x2="702" y2="81.6"/><text class="tick" x="52" y="84.6" text-anchor="end">0.8</text><line class="grid" x1="60" y1="18.0" x2="702" y2="18.0"/><text class="tick" x="52" y="21.0" text-anchor="end">1</text><text class="tick" x="60.0" y="354" text-anchor="start">Jan 2010</text><text class="tick" x="167.0" y="354" text-anchor="middle">Jul 2011</text><text class="tick" x="274.0" y="354" text-anchor="middle">Jan 2013</text><text class="tick" x="381.0" y="354" text-anchor="middle">Jul 2014</text><text class="tick" x="488.0" y="354" text-anchor="middle">Jan 2016</text><text class="tick" x="595.0" y="354" text-anchor="middle">Jul 2017</text><text class="tick" x="702.0" y="354" text-anchor="end">Jan 2019</text><path class="line s1" d="M60.0 41.5 L95.7 43.1 L131.3 61.2 L167.0 281.9 L202.7 317.2 L238.3 323.6 L274.0 322.0 L309.7 313.7 L345.3 310.2 L381.0 314.4 L416.7 316.3 L452.3 317.6 L488.0 318.5 L523.7 320.1 L559.3 321.4 L595.0 320.1 L630.7 318.5 L666.3 318.5 L702.0 317.6"/><circle class="endpoint s1" cx="702.0" cy="317.6" r="3.5"/><circle class="hit" cx="60.0" cy="41.5" r="7"><title>risk_score · Jan 2010: 0.93</title></circle><circle class="hit" cx="95.7" cy="43.1" r="7"><title>risk_score · Jul 2010: 0.92</title></circle><circle class="hit" cx="131.3" cy="61.2" r="7"><title>risk_score · Jan 2011: 0.86</title></circle><circle class="hit" cx="167.0" cy="281.9" r="7"><title>risk_score · Jul 2011: 0.17</title></circle><circle class="hit" cx="202.7" cy="317.2" r="7"><title>risk_score · Jan 2012: 0.06</title></circle><circle class="hit" cx="238.3" cy="323.6" r="7"><title>risk_score · Jul 2012: 0.04</title></circle><circle class="hit" cx="274.0" cy="322.0" r="7"><title>risk_score · Jan 2013: 0.04</title></circle><circle class="hit" cx="309.7" cy="313.7" r="7"><title>risk_score · Jul 2013: 0.07</title></circle><circle class="hit" cx="345.3" cy="310.2" r="7"><title>risk_score · Jan 2014: 0.08</title></circle><circle class="hit" cx="381.0" cy="314.4" r="7"><title>risk_score · Jul 2014: 0.07</title></circle><circle class="hit" cx="416.7" cy="316.3" r="7"><title>risk_score · Jan 2015: 0.06</title></circle><circle class="hit" cx="452.3" cy="317.6" r="7"><title>risk_score · Jul 2015: 0.06</title></circle><circle class="hit" cx="488.0" cy="318.5" r="7"><title>risk_score · Jan 2016: 0.06</title></circle><circle class="hit" cx="523.7" cy="320.1" r="7"><title>risk_score · Jul 2016: 0.05</title></circle><circle class="hit" cx="559.3" cy="321.4" r="7"><title>risk_score · Jan 2017: 0.05</title></circle><circle class="hit" cx="595.0" cy="320.1" r="7"><title>risk_score · Jul 2017: 0.05</title></circle><circle class="hit" cx="630.7" cy="318.5" r="7"><title>risk_score · Jan 2018: 0.06</title></circle><circle class="hit" cx="666.3" cy="318.5" r="7"><title>risk_score · Jul 2018: 0.06</title></circle><circle class="hit" cx="702.0" cy="317.6" r="7"><title>risk_score · Jan 2019: 0.06</title></circle></svg></div>
+  
+  <footer class="tile-foot">
+    <span class="stats">19 rows · 0.004 GB scanned · cached</span>
+  </footer>
+  <details class='sql'><summary>SQL</summary><pre>SELECT month, ROUND(risk_score,3) AS risk_score FROM `project.housing.stress_index` ORDER BY month</pre></details>
+</article>
+<article class="tile">
+  <header class="tile-head">
+    <h2>Home price growth (YoY)</h2>
+    <div class="tile-q">How fast are home prices rising year over year?</div>
+  </header>
+  <div class="chart-wrap"><svg viewBox="0 0 720 380" class="chart" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="60" y1="336.0" x2="702" y2="336.0"/><text class="tick" x="52" y="339.0" text-anchor="end">-5</text><line class="grid" x1="60" y1="236.6" x2="702" y2="236.6"/><text class="tick" x="52" y="239.6" text-anchor="end">0</text><line class="grid" x1="60" y1="137.2" x2="702" y2="137.2"/><text class="tick" x="52" y="140.2" text-anchor="end">5</text><line class="grid" x1="60" y1="37.9" x2="702" y2="37.9"/><text class="tick" x="52" y="40.9" text-anchor="end">10</text><text class="tick" x="60.0" y="354" text-anchor="start">Jan 2010</text><text class="tick" x="167.0" y="354" text-anchor="middle">Jan 2012</text><text class="tick" x="274.0" y="354" text-anchor="middle">Jan 2014</text><text class="tick" x="381.0" y="354" text-anchor="middle">Jan 2016</text><text class="tick" x="488.0" y="354" text-anchor="middle">Jan 2018</text><text class="tick" x="595.0" y="354" text-anchor="middle">Jan 2020</text><text class="tick" x="702.0" y="354" text-anchor="end">Jan 2022</text><path class="line s1" d="M60.0 276.4 L86.8 276.4 L113.5 336.0 L140.2 336.0 L167.0 296.2 L193.8 196.9 L220.5 97.5 L247.2 18.0 L274.0 37.9 L300.8 117.4 L327.5 137.2 L354.2 117.4 L381.0 117.4 L407.8 117.4 L434.5 97.5 L461.2 97.5 L488.0 97.5 L514.8 117.4 L541.5 117.4 L568.2 117.4 L595.0 137.2 L621.8 157.1 L648.5 157.1 L675.2 177.0 L702.0 177.0"/><circle class="endpoint s1" cx="702.0" cy="177.0" r="3.5"/><circle class="hit" cx="60.0" cy="276.4" r="7"><title>hpi_yoy_pct · Jan 2010: -2</title></circle><circle class="hit" cx="86.8" cy="276.4" r="7"><title>hpi_yoy_pct · Jul 2010: -2</title></circle><circle class="hit" cx="113.5" cy="336.0" r="7"><title>hpi_yoy_pct · Jan 2011: -5</title></circle><circle class="hit" cx="140.2" cy="336.0" r="7"><title>hpi_yoy_pct · Jul 2011: -5</title></circle><circle class="hit" cx="167.0" cy="296.2" r="7"><title>hpi_yoy_pct · Jan 2012: -3</title></circle><circle class="hit" cx="193.8" cy="196.9" r="7"><title>hpi_yoy_pct · Jul 2012: 2</title></circle><circle class="hit" cx="220.5" cy="97.5" r="7"><title>hpi_yoy_pct · Jan 2013: 7</title></circle><circle class="hit" cx="247.2" cy="18.0" r="7"><title>hpi_yoy_pct · Jul 2013: 11</title></circle><circle class="hit" cx="274.0" cy="37.9" r="7"><title>hpi_yoy_pct · Jan 2014: 10</title></circle><circle class="hit" cx="300.8" cy="117.4" r="7"><title>hpi_yoy_pct · Jul 2014: 6</title></circle><circle class="hit" cx="327.5" cy="137.2" r="7"><title>hpi_yoy_pct · Jan 2015: 5</title></circle><circle class="hit" cx="354.2" cy="117.4" r="7"><title>hpi_yoy_pct · Jul 2015: 6</title></circle><circle class="hit" cx="381.0" cy="117.4" r="7"><title>hpi_yoy_pct · Jan 2016: 6</title></circle><circle class="hit" cx="407.8" cy="117.4" r="7"><title>hpi_yoy_pct · Jul 2016: 6</title></circle><circle class="hit" cx="434.5" cy="97.5" r="7"><title>hpi_yoy_pct · Jan 2017: 7</title></circle><circle class="hit" cx="461.2" cy="97.5" r="7"><title>hpi_yoy_pct · Jul 2017: 7</title></circle><circle class="hit" cx="488.0" cy="97.5" r="7"><title>hpi_yoy_pct · Jan 2018: 7</title></circle><circle class="hit" cx="514.8" cy="117.4" r="7"><title>hpi_yoy_pct · Jul 2018: 6</title></circle><circle class="hit" cx="541.5" cy="117.4" r="7"><title>hpi_yoy_pct · Jan 2019: 6</title></circle><circle class="hit" cx="568.2" cy="117.4" r="7"><title>hpi_yoy_pct · Jul 2019: 6</title></circle><circle class="hit" cx="595.0" cy="137.2" r="7"><title>hpi_yoy_pct · Jan 2020: 5</title></circle><circle class="hit" cx="621.8" cy="157.1" r="7"><title>hpi_yoy_pct · Jul 2020: 4</title></circle><circle class="hit" cx="648.5" cy="157.1" r="7"><title>hpi_yoy_pct · Jan 2021: 4</title></circle><circle class="hit" cx="675.2" cy="177.0" r="7"><title>hpi_yoy_pct · Jul 2021: 3</title></circle><circle class="hit" cx="702.0" cy="177.0" r="7"><title>hpi_yoy_pct · Jan 2022: 3</title></circle></svg></div>
+  
+  <footer class="tile-foot">
+    <span class="stats">25 rows · 0.004 GB scanned · cached</span>
+  </footer>
+  <details class='sql'><summary>SQL</summary><pre>SELECT month, ROUND(hpi_yoy_pct*100,1) AS hpi_yoy_pct FROM `project.housing.hpi` ORDER BY month</pre></details>
+</article>
+<article class="tile">
+  <header class="tile-head">
+    <h2>Renter cost burden</h2>
+    <div class="tile-q">How many renters are severely vs. moderately cost-burdened?</div>
+  </header>
+  <div class="chart-wrap"><svg viewBox="0 0 720 380" class="chart" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="60" y1="336.0" x2="702" y2="336.0"/><text class="tick" x="52" y="339.0" text-anchor="end">0</text><line class="grid" x1="60" y1="257.3" x2="702" y2="257.3"/><text class="tick" x="52" y="260.3" text-anchor="end">2.5</text><line class="grid" x1="60" y1="178.6" x2="702" y2="178.6"/><text class="tick" x="52" y="181.6" text-anchor="end">5</text><line class="grid" x1="60" y1="99.9" x2="702" y2="99.9"/><text class="tick" x="52" y="102.9" text-anchor="end">7.5</text><line class="grid" x1="60" y1="21.1" x2="702" y2="21.1"/><text class="tick" x="52" y="24.1" text-anchor="end">10</text><text class="tick" x="60.0" y="354" text-anchor="start">2015</text><text class="tick" x="167.0" y="354" text-anchor="middle">2016</text><text class="tick" x="274.0" y="354" text-anchor="middle">2017</text><text class="tick" x="381.0" y="354" text-anchor="middle">2018</text><text class="tick" x="488.0" y="354" text-anchor="middle">2019</text><text class="tick" x="702.0" y="354" text-anchor="end">2021</text><path class="line s1" d="M60.0 32.2 L167.0 35.9 L274.0 41.9 L381.0 37.5 L488.0 47.6 L702.0 18.0"/><circle class="endpoint s1" cx="702.0" cy="18.0" r="3.5"/><circle class="hit" cx="60.0" cy="32.2" r="7"><title>severely_burdened · 2015: 9.65</title></circle><circle class="hit" cx="167.0" cy="35.9" r="7"><title>severely_burdened · 2016: 9.53</title></circle><circle class="hit" cx="274.0" cy="41.9" r="7"><title>severely_burdened · 2017: 9.34</title></circle><circle class="hit" cx="381.0" cy="37.5" r="7"><title>severely_burdened · 2018: 9.48</title></circle><circle class="hit" cx="488.0" cy="47.6" r="7"><title>severely_burdened · 2019: 9.16</title></circle><circle class="hit" cx="702.0" cy="18.0" r="7"><title>severely_burdened · 2021: 10.1</title></circle><path class="line s2" d="M60.0 38.2 L167.0 40.7 L274.0 42.6 L381.0 38.2 L488.0 37.5 L702.0 34.7"/><circle class="endpoint s2" cx="702.0" cy="34.7" r="3.5"/><circle class="hit" cx="60.0" cy="38.2" r="7"><title>moderately_burdened · 2015: 9.46</title></circle><circle class="hit" cx="167.0" cy="40.7" r="7"><title>moderately_burdened · 2016: 9.38</title></circle><circle class="hit" cx="274.0" cy="42.6" r="7"><title>moderately_burdened · 2017: 9.32</title></circle><circle class="hit" cx="381.0" cy="38.2" r="7"><title>moderately_burdened · 2018: 9.46</title></circle><circle class="hit" cx="488.0" cy="37.5" r="7"><title>moderately_burdened · 2019: 9.48</title></circle><circle class="hit" cx="702.0" cy="34.7" r="7"><title>moderately_burdened · 2021: 9.57</title></circle></svg></div>
+  <div class="legend"><span class="lg-item"><span class="lg-swatch s1"></span>severely_burdened</span><span class="lg-item"><span class="lg-swatch s2"></span>moderately_burdened</span></div>
+  <footer class="tile-foot">
+    <span class="stats">6 rows · 0.212 GB scanned</span>
+  </footer>
+  <details class='sql'><summary>SQL</summary><pre>SELECT year, ROUND(severely_burdened/1e6,2) AS severely_burdened,
+  ROUND(moderately_burdened/1e6,2) AS moderately_burdened
+FROM `bigquery-public-data.census_bureau_acs.*` GROUP BY year ORDER BY year</pre></details>
+</article>
+  </main>
+  <section class="insights">
+  <h2 class="section-title">Insights</h2>
+  <div class="insight-list"><div class="insight">
+  <p>The composite housing-risk score fell from 0.93 (2010) to near 0.05 by 2013 and has stayed low — the post-crisis normalization, not a new bubble signal.</p>
+  <div class="ins-meta"><span class="tag">housing</span><span class="tag">risk</span><span class="ins-date">2026-07-21</span></div>
+  <div class="ins-src">from “How has the composite housing-risk score trended since 2010?”</div>
+</div>
+<div class="insight">
+  <p>Roughly 9.6M renters are severely cost-burdened (&gt;50% of income on rent) — about a quarter of all renters and essentially flat across the period.</p>
+  <div class="ins-meta"><span class="tag">housing</span><span class="tag">affordability</span><span class="ins-date">2026-07-21</span></div>
+  <div class="ins-src">from “How many renters are severely vs. moderately cost-burdened?”</div>
+</div></div>
+</section>
+</section>
+<section class="board-view" id="view-air" hidden>
+  <a class="back-link" href="#">← All dashboards</a>
+  <h1 class="board-h1">Global Air Quality Watch</h1>
+  <p class="board-desc">PM2.5 pollution by country and city, and the India-vs-US gap over time — from the OpenAQ public dataset.</p>
+  <div class="summary"><div class="sum"><span class="sum-n">3</span><span class="sum-l">tiles</span></div><div class="sum"><span class="sum-n">38</span><span class="sum-l">rows</span></div><div class="sum"><span class="sum-n">0.28</span><span class="sum-l">GB scanned</span></div><div class="sum"><span class="sum-n">2026-07-21 → 2026-07-21</span><span class="sum-l">date range</span></div></div>
+  <main class="grid">
+    <article class="tile">
+  <header class="tile-head">
+    <h2>Worst countries by PM2.5</h2>
+    <div class="tile-q">Which countries have the highest average PM2.5?</div>
+  </header>
+  <div class="chart-wrap"><svg viewBox="0 0 720 380" class="chart" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="148.0" y1="18" x2="148.0" y2="336.0"/><text class="tick" x="148.0" y="354" text-anchor="middle">0</text><line class="grid" x1="279.4" y1="18" x2="279.4" y2="336.0"/><text class="tick" x="279.4" y="354" text-anchor="middle">25</text><line class="grid" x1="410.8" y1="18" x2="410.8" y2="336.0"/><text class="tick" x="410.8" y="354" text-anchor="middle">50</text><line class="grid" x1="542.2" y1="18" x2="542.2" y2="336.0"/><text class="tick" x="542.2" y="354" text-anchor="middle">75</text><line class="grid" x1="673.6" y1="18" x2="673.6" y2="336.0"/><text class="tick" x="673.6" y="354" text-anchor="middle">100</text><rect class="bar s1" x="148.0" y="23.0" width="554.0" height="16.4" rx="3"><title>AE: 105.4</title></rect><text class="cat" x="140" y="34.2" text-anchor="end">AE</text><rect class="bar s1" x="148.0" y="49.5" width="367.9" height="16.4" rx="3"><title>PK: 70</title></rect><text class="cat" x="140" y="60.8" text-anchor="end">PK</text><rect class="bar s1" x="148.0" y="76.0" width="311.7" height="16.4" rx="3"><title>IN: 59.3</title></rect><text class="cat" x="140" y="87.2" text-anchor="end">IN</text><rect class="bar s1" x="148.0" y="102.5" width="220.2" height="16.4" rx="3"><title>CL: 41.9</title></rect><text class="cat" x="140" y="113.8" text-anchor="end">CL</text><rect class="bar s1" x="148.0" y="129.0" width="209.2" height="16.4" rx="3"><title>PE: 39.8</title></rect><text class="cat" x="140" y="140.2" text-anchor="end">PE</text><rect class="bar s1" x="148.0" y="155.5" width="136.7" height="16.4" rx="3"><title>CN: 26</title></rect><text class="cat" x="140" y="166.8" text-anchor="end">CN</text><rect class="bar s1" x="148.0" y="182.0" width="124.6" height="16.4" rx="3"><title>MX: 23.7</title></rect><text class="cat" x="140" y="193.2" text-anchor="end">MX</text><rect class="bar s1" x="148.0" y="208.5" width="121.4" height="16.4" rx="3"><title>CH: 23.1</title></rect><text class="cat" x="140" y="219.8" text-anchor="end">CH</text><rect class="bar s1" x="148.0" y="235.0" width="118.3" height="16.4" rx="3"><title>ZA: 22.5</title></rect><text class="cat" x="140" y="246.2" text-anchor="end">ZA</text><rect class="bar s1" x="148.0" y="261.5" width="103.5" height="16.4" rx="3"><title>GT: 19.7</title></rect><text class="cat" x="140" y="272.8" text-anchor="end">GT</text><rect class="bar s1" x="148.0" y="288.0" width="97.2" height="16.4" rx="3"><title>TH: 18.5</title></rect><text class="cat" x="140" y="299.2" text-anchor="end">TH</text><rect class="bar s1" x="148.0" y="314.5" width="84.6" height="16.4" rx="3"><title>IT: 16.1</title></rect><text class="cat" x="140" y="325.8" text-anchor="end">IT</text></svg></div>
+  
+  <footer class="tile-foot">
+    <span class="stats">12 rows · 0.089 GB scanned · cached</span>
+  </footer>
+  <details class='sql'><summary>SQL</summary><pre>SELECT country, ROUND(AVG(value),1) AS avg_pm25 FROM `bigquery-public-data.openaq.global_air_quality`
+WHERE parameter=&#x27;pm25&#x27; AND value BETWEEN 0 AND 1000 GROUP BY country ORDER BY avg_pm25 DESC LIMIT 12</pre></details>
+</article>
+<article class="tile">
+  <header class="tile-head">
+    <h2>Worst cities by PM2.5</h2>
+    <div class="tile-q">Which cities have the highest average PM2.5?</div>
+  </header>
+  <div class="chart-wrap"><svg viewBox="0 0 720 380" class="chart" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="148.0" y1="18" x2="148.0" y2="336.0"/><text class="tick" x="148.0" y="354" text-anchor="middle">0</text><line class="grid" x1="258.8" y1="18" x2="258.8" y2="336.0"/><text class="tick" x="258.8" y="354" text-anchor="middle">25</text><line class="grid" x1="369.6" y1="18" x2="369.6" y2="336.0"/><text class="tick" x="369.6" y="354" text-anchor="middle">50</text><line class="grid" x1="480.4" y1="18" x2="480.4" y2="336.0"/><text class="tick" x="480.4" y="354" text-anchor="middle">75</text><line class="grid" x1="591.2" y1="18" x2="591.2" y2="336.0"/><text class="tick" x="591.2" y="354" text-anchor="middle">100</text><line class="grid" x1="702.0" y1="18" x2="702.0" y2="336.0"/><text class="tick" x="702.0" y="354" text-anchor="middle">125</text><rect class="bar s1" x="148.0" y="23.0" width="548.7" height="16.4" rx="3"><title>AE: 123.8</title></rect><text class="cat" x="140" y="34.2" text-anchor="end">AE</text><rect class="bar s1" x="148.0" y="49.5" width="495.9" height="16.4" rx="3"><title>Khartoum: 111.9</title></rect><text class="cat" x="140" y="60.8" text-anchor="end">Khartoum</text><rect class="bar s1" x="148.0" y="76.0" width="444.5" height="16.4" rx="3"><title>Delhi: 100.3</title></rect><text class="cat" x="140" y="87.2" text-anchor="end">Delhi</text><rect class="bar s1" x="148.0" y="102.5" width="425.9" height="16.4" rx="3"><title>SU: 96.1</title></rect><text class="cat" x="140" y="113.8" text-anchor="end">SU</text><rect class="bar s1" x="148.0" y="129.0" width="423.7" height="16.4" rx="3"><title>Faridabad: 95.6</title></rect><text class="cat" x="140" y="140.2" text-anchor="end">Faridabad</text><rect class="bar s1" x="148.0" y="155.5" width="419.7" height="16.4" rx="3"><title>Gurugram: 94.7</title></rect><text class="cat" x="140" y="166.8" text-anchor="end">Gurugram</text><rect class="bar s1" x="148.0" y="182.0" width="386.9" height="16.4" rx="3"><title>Ghaziabad: 87.3</title></rect><text class="cat" x="140" y="193.2" text-anchor="end">Ghaziabad</text><rect class="bar s1" x="148.0" y="208.5" width="371.0" height="16.4" rx="3"><title>Coyhaique: 83.7</title></rect><text class="cat" x="140" y="219.8" text-anchor="end">Coyhaique</text><rect class="bar s1" x="148.0" y="235.0" width="362.5" height="16.4" rx="3"><title>Jaipur: 81.8</title></rect><text class="cat" x="140" y="246.2" text-anchor="end">Jaipur</text><rect class="bar s1" x="148.0" y="261.5" width="360.3" height="16.4" rx="3"><title>Noida: 81.3</title></rect><text class="cat" x="140" y="272.8" text-anchor="end">Noida</text><rect class="bar s1" x="148.0" y="288.0" width="343.5" height="16.4" rx="3"><title>Meerut: 77.5</title></rect><text class="cat" x="140" y="299.2" text-anchor="end">Meerut</text><rect class="bar s1" x="148.0" y="314.5" width="336.4" height="16.4" rx="3"><title>Mumbai: 75.9</title></rect><text class="cat" x="140" y="325.8" text-anchor="end">Mumbai</text></svg></div>
+  
+  <footer class="tile-foot">
+    <span class="stats">12 rows · 0.091 GB scanned · cached</span>
+  </footer>
+  <details class='sql'><summary>SQL</summary><pre>SELECT city AS place, ROUND(AVG(value),1) AS avg_pm25 FROM `bigquery-public-data.openaq.global_air_quality`
+WHERE parameter=&#x27;pm25&#x27; AND value BETWEEN 0 AND 1000 GROUP BY city ORDER BY avg_pm25 DESC LIMIT 12</pre></details>
+</article>
+<article class="tile">
+  <header class="tile-head">
+    <h2>India vs USA: PM2.5 over time</h2>
+    <div class="tile-q">How does India&#x27;s PM2.5 compare with the US year over year?</div>
+  </header>
+  <div class="chart-wrap"><svg viewBox="0 0 720 380" class="chart" role="img" preserveAspectRatio="xMidYMid meet"><line class="grid" x1="60" y1="336.0" x2="702" y2="336.0"/><text class="tick" x="52" y="339.0" text-anchor="end">0</text><line class="grid" x1="60" y1="239.8" x2="702" y2="239.8"/><text class="tick" x="52" y="242.8" text-anchor="end">200</text><line class="grid" x1="60" y1="143.6" x2="702" y2="143.6"/><text class="tick" x="52" y="146.6" text-anchor="end">400</text><line class="grid" x1="60" y1="47.4" x2="702" y2="47.4"/><text class="tick" x="52" y="50.4" text-anchor="end">600</text><text class="tick" x="60.0" y="354" text-anchor="start">2016</text><text class="tick" x="167.0" y="354" text-anchor="middle">2017</text><text class="tick" x="274.0" y="354" text-anchor="middle">2018</text><text class="tick" x="381.0" y="354" text-anchor="middle">2019</text><text class="tick" x="488.0" y="354" text-anchor="middle">2020</text><text class="tick" x="595.0" y="354" text-anchor="middle">2021</text><text class="tick" x="702.0" y="354" text-anchor="end">2022</text><path class="line s1" d="M60.0 280.3 L167.0 308.6 L274.0 267.9 L381.0 317.8 L488.0 314.6 L595.0 18.0 L702.0 307.5"/><circle class="endpoint s1" cx="702.0" cy="307.5" r="3.5"/><circle class="hit" cx="60.0" cy="280.3" r="7"><title>India · 2016: 115.9</title></circle><circle class="hit" cx="167.0" cy="308.6" r="7"><title>India · 2017: 57</title></circle><circle class="hit" cx="274.0" cy="267.9" r="7"><title>India · 2018: 141.5</title></circle><circle class="hit" cx="381.0" cy="317.8" r="7"><title>India · 2019: 37.9</title></circle><circle class="hit" cx="488.0" cy="314.6" r="7"><title>India · 2020: 44.5</title></circle><circle class="hit" cx="595.0" cy="18.0" r="7"><title>India · 2021: 661.2</title></circle><circle class="hit" cx="702.0" cy="307.5" r="7"><title>India · 2022: 59.2</title></circle><path class="line s2" d="M60.0 330.3 L167.0 330.0 L274.0 329.7 L381.0 331.1 L488.0 332.6 L595.0 330.1 L702.0 332.9"/><circle class="endpoint s2" cx="702.0" cy="332.9" r="3.5"/><circle class="hit" cx="60.0" cy="330.3" r="7"><title>USA · 2016: 11.9</title></circle><circle class="hit" cx="167.0" cy="330.0" r="7"><title>USA · 2017: 12.4</title></circle><circle class="hit" cx="274.0" cy="329.7" r="7"><title>USA · 2018: 13</title></circle><circle class="hit" cx="381.0" cy="331.1" r="7"><title>USA · 2019: 10.2</title></circle><circle class="hit" cx="488.0" cy="332.6" r="7"><title>USA · 2020: 7</title></circle><circle class="hit" cx="595.0" cy="330.1" r="7"><title>USA · 2021: 12.2</title></circle><circle class="hit" cx="702.0" cy="332.9" r="7"><title>USA · 2022: 6.5</title></circle></svg></div>
+  <div class="legend"><span class="lg-item"><span class="lg-swatch s1"></span>India</span><span class="lg-item"><span class="lg-swatch s2"></span>USA</span></div>
+  <footer class="tile-foot">
+    <span class="stats">14 rows · 0.104 GB scanned</span>
+  </footer>
+  <details class='sql'><summary>SQL</summary><pre>SELECT year, country, ROUND(AVG(value),1) AS avg_pm25 FROM `bigquery-public-data.openaq.global_air_quality`
+WHERE parameter=&#x27;pm25&#x27; AND country IN (&#x27;IN&#x27;,&#x27;US&#x27;) GROUP BY year, country ORDER BY year</pre></details>
+</article>
+  </main>
+  <section class="insights">
+  <h2 class="section-title">Insights</h2>
+  <div class="insight-list"><div class="insight">
+  <p>The three highest-PM2.5 countries all exceed 70 µg/m³ — roughly 5× the WHO 24-hour guideline of 15 µg/m³.</p>
+  <div class="ins-meta"><span class="tag">air-quality</span><span class="tag">public-health</span><span class="ins-date">2026-07-21</span></div>
+  <div class="ins-src">from “Which countries have the highest average PM2.5?”</div>
+</div>
+<div class="insight">
+  <p>India&#x27;s average PM2.5 runs 5–8× the US level every year in the window, and the gap has not meaningfully closed.</p>
+  <div class="ins-meta"><span class="tag">air-quality</span><span class="tag">india</span><span class="tag">trend</span><span class="ins-date">2026-07-21</span></div>
+  <div class="ins-src">from “How does India&#x27;s PM2.5 compare with the US year over year?”</div>
+</div></div>
+</section>
+</section>
+
+  <footer class="pagefoot">
+    Built with <strong>construct-analyst</strong> · 3 dashboards · one shareable link
+  </footer>
+</div>
+<script>
+
+function toggleTheme(){
+  var r=document.documentElement;
+  var cur=r.getAttribute('data-theme');
+  if(!cur){cur=matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';}
+  r.setAttribute('data-theme',cur==='dark'?'light':'dark');
+}
+
+var VALID=["macro", "housing", "air"];
+function route(){
+  var slug=(location.hash||'').replace(/^#/,'');
+  var views=document.querySelectorAll('.board-view');
+  var index=document.getElementById('hub-index');
+  var crumb=document.getElementById('crumb');
+  views.forEach(function(v){v.hidden=true;});
+  if(slug && VALID.indexOf(slug)>=0){
+    index.hidden=true;
+    var v=document.getElementById('view-'+slug);
+    if(v){v.hidden=false;}
+    var t=v?v.querySelector('.board-h1'):null;
+    crumb.textContent=t?t.textContent:'Dashboard';
+  }else{
+    index.hidden=false;
+    crumb.textContent='Dashboards';
+  }
+  window.scrollTo(0,0);
+}
+window.addEventListener('hashchange',route);
+window.addEventListener('load',route);
+</script>

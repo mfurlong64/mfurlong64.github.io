@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hex Duke Balance Dashboard</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: #21150c;
+  color: #ead9b6;
+  font-family: ui-serif, Georgia, "Times New Roman", serif;
+  line-height: 1.45;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 28px 18px 44px; }
+header {
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap: 18px;
+  align-items: end;
+  border-bottom: 1px solid #6b4923;
+  padding-bottom: 18px;
+}
+h1 { margin: 0; color: #f1c85a; font-size: 2rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.subtitle { margin-top: 8px; color: #c6ad83; max-width: 720px; }
+.stamp { text-align: right; color: #a88d62; font-size: 0.92rem; }
+.warning {
+  margin: 18px 0;
+  padding: 14px 16px;
+  background: #3b1c14;
+  border: 1px solid #9e4b2e;
+  border-radius: 6px;
+  color: #ffd6bd;
+}
+.grid { display: grid; gap: 14px; }
+.cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.card {
+  background: linear-gradient(155deg, #2f1d0d, #1a1008);
+  border: 1px solid #61401d;
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.24);
+}
+.metric-label { color: #a88d62; font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.12em; }
+.metric { margin-top: 6px; font-size: 2rem; color: #f2d46e; font-weight: 700; }
+.metric small { font-size: 0.92rem; color: #c6ad83; font-weight: 400; }
+.note { color: #c6ad83; font-size: 0.94rem; margin-top: 8px; }
+h2 { color: #f1c85a; margin: 24px 0 12px; font-size: 1.15rem; letter-spacing: 0.06em; text-transform: uppercase; }
+h3 { margin: 0 0 8px; color: #f1c85a; font-size: 1rem; }
+table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 6px; }
+th, td { padding: 9px 10px; border-bottom: 1px solid #4d3318; text-align: right; }
+th:first-child, td:first-child { text-align: left; }
+th { color: #f1c85a; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.08em; background: #2b1a0d; }
+tr:last-child td { border-bottom: 0; }
+.bar-row { display: grid; grid-template-columns: 120px 1fr 56px; gap: 10px; align-items: center; margin: 9px 0; }
+.bar-bg { height: 12px; background: #3c2813; border-radius: 999px; overflow: hidden; }
+.bar { height: 100%; background: linear-gradient(90deg, #b96c2c, #f1c85a); border-radius: 999px; }
+.pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #3a2916;
+  color: #f1c85a;
+  font-size: 0.78rem;
+  margin-left: 6px;
+}
+.rec {
+  border-left: 4px solid #f1c85a;
+  padding-left: 12px;
+}
+.rec strong { color: #ffe08a; }
+.danger { border-left-color: #d9673d; }
+.good { border-left-color: #73b66b; }
+.muted { color: #a88d62; }
+.footer { margin-top: 26px; color: #a88d62; font-size: 0.9rem; }
+@media (max-width: 860px) {
+  header, .cards, .two, .three { grid-template-columns: 1fr; }
+  .stamp { text-align: left; }
+}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <div>
+      <h1>Hex Duke Balance Dashboard</h1>
+      <div class="subtitle">Lightweight recommendations from 1,000-game simulator batches, piece efficiency analysis, and flag-pressure tracking.</div>
+    </div>
+    <div class="stamp">Generated from current sim outputs<br>Sample size: 1,000 games per batch</div>
+  </header>
+
+  <div class="warning">
+    <strong>Read this first:</strong> the simulator currently disagrees with the browser game on some Outlander, Mage, and Horseman movement rules. Fix that shared-rules drift before treating these recommendations as final balance decisions.
+  </div>
+
+  <section class="grid cards">
+    <div class="card">
+      <div class="metric-label">Best mode today</div>
+      <div class="metric">antirep</div>
+      <div class="note">0% draws, 51.8% P0 win rate, longest average games.</div>
+    </div>
+    <div class="card">
+      <div class="metric-label">Likely first-player bias</div>
+      <div class="metric">Low</div>
+      <div class="note">P0 decisive rates mostly sit near 50%, inside noisy 1k-run bands.</div>
+    </div>
+    <div class="card">
+      <div class="metric-label">Main pressure pattern</div>
+      <div class="metric">Flag cage</div>
+      <div class="note">Flag adjacency happened in 25.6% of games, but direct flag captures were 0.</div>
+    </div>
+    <div class="card">
+      <div class="metric-label">Most suspicious piece</div>
+      <div class="metric">Mage</div>
+      <div class="note">Lowest sim efficiency, but movement drift makes this provisional.</div>
+    </div>
+  </section>
+
+  <h2>Mode Comparison</h2>
+  <section class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Mode</th>
+          <th>P0 Wins</th>
+          <th>P1 Wins</th>
+          <th>Draws</th>
+          <th>Mean Plies</th>
+          <th>Fast Losses</th>
+          <th>Balance Read</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>baseline</td><td>489</td><td>452</td><td>59</td><td>32.9</td><td>9.8%</td><td>Playable, but loops remain.</td></tr>
+        <tr><td>antirep</td><td>518</td><td>482</td><td>0</td><td>35.4</td><td>9.7%</td><td>Best rules hygiene improvement.</td></tr>
+        <tr><td>mobility</td><td>471</td><td>490</td><td>39</td><td>25.2</td><td>12.1%</td><td>Shortens games, may sharpen traps.</td></tr>
+        <tr><td>full</td><td>476</td><td>524</td><td>0</td><td>25.9</td><td>11.2%</td><td>Cleaner but more volatile.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <h2>Piece Efficiency</h2>
+  <section class="grid two">
+    <div class="card">
+      <h3>Value Efficiency</h3>
+      <div class="bar-row"><span>Pawn</span><div class="bar-bg"><div class="bar" style="width:100%"></div></div><span>2.79</span></div>
+      <div class="bar-row"><span>Archer</span><div class="bar-bg"><div class="bar" style="width:32%"></div></div><span>0.90</span></div>
+      <div class="bar-row"><span>Auxiliary</span><div class="bar-bg"><div class="bar" style="width:26%"></div></div><span>0.72</span></div>
+      <div class="bar-row"><span>Warrior</span><div class="bar-bg"><div class="bar" style="width:22%"></div></div><span>0.60</span></div>
+      <div class="bar-row"><span>Horseman</span><div class="bar-bg"><div class="bar" style="width:14%"></div></div><span>0.39</span></div>
+      <div class="bar-row"><span>Outlander</span><div class="bar-bg"><div class="bar" style="width:11%"></div></div><span>0.32</span></div>
+      <div class="bar-row"><span>Mage</span><div class="bar-bg"><div class="bar" style="width:5%"></div></div><span>0.13</span></div>
+      <div class="note">Pawns are cheap, durable, and trade up. Mage looks overcosted or under-effective in the sim.</div>
+    </div>
+    <div class="card">
+      <h3>Survival Rate</h3>
+      <div class="bar-row"><span>Pawn</span><div class="bar-bg"><div class="bar" style="width:100%"></div></div><span>59.7%</span></div>
+      <div class="bar-row"><span>Archer</span><div class="bar-bg"><div class="bar" style="width:47%"></div></div><span>28.1%</span></div>
+      <div class="bar-row"><span>Warrior</span><div class="bar-bg"><div class="bar" style="width:37%"></div></div><span>22.3%</span></div>
+      <div class="bar-row"><span>Auxiliary</span><div class="bar-bg"><div class="bar" style="width:29%"></div></div><span>17.1%</span></div>
+      <div class="bar-row"><span>Horseman</span><div class="bar-bg"><div class="bar" style="width:28%"></div></div><span>17.0%</span></div>
+      <div class="bar-row"><span>Outlander</span><div class="bar-bg"><div class="bar" style="width:28%"></div></div><span>17.0%</span></div>
+      <div class="bar-row"><span>Mage</span><div class="bar-bg"><div class="bar" style="width:24%"></div></div><span>14.4%</span></div>
+      <div class="note">The cheap piece survives like an anchor; the premium piece evaporates.</div>
+    </div>
+  </section>
+
+  <h2>Recommendations</h2>
+  <section class="grid three">
+    <div class="card rec danger">
+      <h3>1. Fix the rules source</h3>
+      <p><strong>Priority:</strong> high. Move `TILE_DEFS`, move generation, and legality into one shared JS module, then import it into both the browser and simulator. Right now, balancing from sim output is a little haunted.</p>
+      <p class="muted">Success check: browser and sim produce identical legal moves for seeded board states.</p>
+    </div>
+    <div class="card rec good">
+      <h3>2. Keep anti-repetition</h3>
+      <p><strong>Priority:</strong> high. Anti-repetition removed all 59 baseline repetition draws without creating obvious first-player bias.</p>
+      <p class="muted">Rule feel: no player loses agency; the AI just stops choosing stale loops.</p>
+    </div>
+    <div class="card rec">
+      <h3>3. Rework mobility scoring</h3>
+      <p><strong>Priority:</strong> medium. The mobility modes made games shorter and fast losses slightly worse. Reduce the weight from 4 to 1-2, or only apply it to placements adjacent to the Prince.</p>
+      <p class="muted">Goal: prevent self-boxing without making the AI over-prioritize tempo traps.</p>
+    </div>
+    <div class="card rec">
+      <h3>4. Split Pawn metrics</h3>
+      <p><strong>Priority:</strong> medium. Separate starting Pawns from placed Pawns. Two Pawns begin on the board, so current Pawn stats mix opening-shield behavior with normal bag-entry behavior.</p>
+      <p class="muted">Decision unlocked: whether Pawns are too strong, or the setup is doing the work.</p>
+    </div>
+    <div class="card rec">
+      <h3>5. Buff or clarify Mage</h3>
+      <p><strong>Priority:</strong> provisional. If the post-fix sim still shows Mage at low survival and low value efficiency, give it one survivability or reach improvement.</p>
+      <p class="muted">Small options: make one side a true jump, add one adjacent escape, or reduce its capture value expectation.</p>
+    </div>
+    <div class="card rec">
+      <h3>6. Rename flag wins</h3>
+      <p><strong>Priority:</strong> low. Direct flag capture is not happening, but flag cornering is. Treat this as a legitimate win path in UI and reports, not a second-class stalemate.</p>
+      <p class="muted">Suggested language: "Flag locked" or "Flag cornered".</p>
+    </div>
+  </section>
+
+  <h2>Next Experiment Queue</h2>
+  <section class="card">
+    <table>
+      <thead>
+        <tr><th>Experiment</th><th>Change</th><th>Watch Metric</th><th>Desired Outcome</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Shared-rules baseline</td><td>Unify browser and sim rules</td><td>Move parity failures</td><td>0 mismatches</td></tr>
+        <tr><td>Pawn split</td><td>Track `Pawn_starting` vs `Pawn_placed`</td><td>K/D, survival, winner presence</td><td>Know whether setup or piece is strong</td></tr>
+        <tr><td>Mobility weight sweep</td><td>Run weights 0, 1, 2, 3, 4</td><td>Fast losses, mean plies</td><td>Lower traps without shortening games too much</td></tr>
+        <tr><td>Mage A/B test</td><td>Add one escape or make side B true jump</td><td>Mage survival/value efficiency</td><td>Bring Mage near Archer/Warrior usefulness</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <div class="footer">
+    Data used: 1,000-game runs for baseline, antirep, mobility, and full modes; 1,000-game piece analysis; 1,000-game flag-rush analysis.
+  </div>
+</main>
+</body>
+</html>

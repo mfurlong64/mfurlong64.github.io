@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pipeline Health — construct-analyst</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg:#F2F1EE; --card:#FBFAF8; --ink:#1A1B1E; --ink2:#5B6066; --ink3:#8A9097;
+  --line:#DCDAD4; --line2:#EAE8E3;
+  --accent:#17607A; --ok:#2D7A4F; --warn:#B07A0E; --bad:#B03A2B;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#17181A; --card:#1E2023; --ink:#E9E9E6; --ink2:#A0A6AC; --ink3:#71787F;
+           --line:#31353A; --line2:#25292D;
+           --accent:#5FA8C7; --ok:#5DA97C; --warn:#D0A63F; --bad:#D4685A; }
+}
+:root[data-theme="dark"] { --bg:#17181A; --card:#1E2023; --ink:#E9E9E6; --ink2:#A0A6AC;
+  --ink3:#71787F; --line:#31353A; --line2:#25292D;
+  --accent:#5FA8C7; --ok:#5DA97C; --warn:#D0A63F; --bad:#D4685A; }
+:root[data-theme="light"] { --bg:#F2F1EE; --card:#FBFAF8; --ink:#1A1B1E; --ink2:#5B6066;
+  --ink3:#8A9097; --line:#DCDAD4; --line2:#EAE8E3;
+  --accent:#17607A; --ok:#2D7A4F; --warn:#B07A0E; --bad:#B03A2B; }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:74rem;margin:0 auto;padding:2rem 1.25rem 4rem}
+
+.top{display:flex;flex-wrap:wrap;gap:.75rem 1.5rem;align-items:baseline;
+  justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:.85rem}
+h1{font-size:1.6rem;margin:0;letter-spacing:-.02em}
+.meta{font-family:var(--mono);font-size:.75rem;color:var(--ink3);letter-spacing:.04em}
+
+.banner{margin:1.25rem 0 0;padding:.9rem 1.1rem;border-radius:8px;
+  display:flex;flex-wrap:wrap;gap:.6rem 1.2rem;align-items:center;
+  border:1px solid var(--line);background:var(--card);border-left-width:5px}
+.banner.ok{border-left-color:var(--ok)} .banner.warn{border-left-color:var(--warn)}
+.banner.bad{border-left-color:var(--bad)}
+.banner b{font-size:1.05rem}
+.banner .counts{font-family:var(--mono);font-size:.8rem;color:var(--ink2);margin-left:auto}
+
+h2{font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);
+  margin:2.5rem 0 .9rem;padding-bottom:.4rem;border-bottom:1px solid var(--line)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(20rem,1fr));gap:.9rem}
+.source{background:var(--card);border:1px solid var(--line);border-radius:8px;
+  padding:1rem 1.1rem;border-left:4px solid var(--ink3)}
+.source.fresh{border-left-color:var(--ok)} .source.due{border-left-color:var(--accent)}
+.source.late{border-left-color:var(--warn)} .source.stale,.source.critical{border-left-color:var(--bad)}
+.source header{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+.source h3{margin:0;font-size:1rem;font-family:var(--mono);letter-spacing:-.01em}
+.cadence{font-family:var(--mono);font-size:.7rem;color:var(--ink3);margin-left:auto}
+.note{margin:.55rem 0 .8rem;color:var(--ink2);font-size:.87rem}
+
+.pill{font-family:var(--mono);font-size:.66rem;letter-spacing:.09em;text-transform:uppercase;
+  padding:.14rem .5rem;border-radius:99px;border:1px solid currentColor}
+.pill.fresh{color:var(--ok)} .pill.due{color:var(--accent)} .pill.late{color:var(--warn)}
+.pill.stale,.pill.critical{color:var(--bad)} .pill.unknown{color:var(--ink3)}
+
+dl{display:flex;flex-wrap:wrap;gap:.15rem 1.4rem;margin:0 0 .6rem}
+dl div{display:flex;flex-direction:column}
+dt{font-family:var(--mono);font-size:.65rem;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3)}
+dd{margin:0;font-family:var(--mono);font-size:1.05rem;font-variant-numeric:tabular-nums}
+dd.bad{color:var(--bad)}
+
+.err{margin:.5rem 0;padding:.5rem .65rem;background:var(--bg);border-left:3px solid var(--bad);
+  font-family:var(--mono);font-size:.72rem;color:var(--ink2);word-break:break-word}
+.err strong{color:var(--bad);display:block;margin-bottom:.15rem}
+
+table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.75rem}
+.strip{white-space:nowrap;line-height:0}
+.contracts td:first-child,.contracts th:first-child{width:1%;white-space:nowrap}
+.contracts td.strip,.contracts th:nth-child(2){width:1%}
+.contracts td:last-child{white-space:normal}
+.contracts p,.contracts .lead{text-align:left}
+.strip i{display:inline-block;width:7px;height:16px;margin-right:2px;border-radius:1px}
+.strip i.ok{background:var(--ok,#5ec489)}
+.strip i.bad{background:var(--stop,#ef6b64)}
+.warn{color:var(--warn,#e8b04b)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+th,td{padding:.38rem .6rem;text-align:left;border-bottom:1px solid var(--line2);white-space:nowrap}
+th{font-size:.65rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);font-weight:600}
+td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:last-child td{border-bottom:0}
+.miniwrap{margin-top:.6rem;overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.mini{min-width:26rem}
+table.mini th,table.mini td{padding:.28rem .5rem;font-size:.71rem}
+td.when{color:var(--ink3)}
+a{color:var(--accent);text-decoration:none;border-bottom:1px solid transparent}
+a:hover,a:focus-visible{border-bottom-color:currentColor}
+a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.muted{color:var(--ink3);text-align:center;padding:1rem}
+.ok-dot,.bad-dot{display:inline-block;width:.5rem;height:.5rem;border-radius:50%}
+.ok-dot{background:var(--ok)} .bad-dot{background:var(--bad)}
+
+.gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));gap:.9rem}
+.gauge{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:.9rem 1rem}
+.glabel{display:flex;justify-content:space-between;font-family:var(--mono);font-size:.72rem;
+  letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin-bottom:.5rem}
+.glabel span{color:var(--ink);font-size:.95rem}
+.gbar{height:7px;background:var(--line2);border-radius:4px;overflow:hidden}
+.gbar i{display:block;height:100%;background:var(--ok)}
+.gauge.warn .gbar i{background:var(--warn)} .gauge.critical .gbar i{background:var(--bad)}
+.gnote{margin-top:.45rem;font-family:var(--mono);font-size:.7rem;color:var(--ink2)}
+
+footer{margin-top:3rem;padding-top:1rem;border-top:1px solid var(--line);
+  font-family:var(--mono);font-size:.7rem;color:var(--ink3)}
+@media (max-width:34rem){ .banner .counts{margin-left:0} }
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <h1>Pipeline Health</h1>
+    <span class="meta">project-7c859da6-dddd-4a26-8da · generated 2026-08-17 14:50 UTC</span>
+  </div>
+
+  <div class="banner ok">
+    <b>All sources current</b>
+    <span class="counts">5/5 sources healthy ·
+      29 runs · 2 failed ·
+      399,939 rows landed</span>
+  </div>
+
+  <h2>Sources</h2>
+  <div class="grid">
+        <article class="source fresh">
+          <header>
+            <h3>reference</h3>
+            <span class="pill fresh">fresh</span>
+            <span class="cadence">every 30d</span>
+          </header>
+          <p class="note">Last landed 11 days ago, within its monthly cadence.</p>
+          <dl>
+            <div><dt>runs</dt><dd>2</dd></div>
+            <div><dt>ok</dt><dd>1</dd></div>
+            <div><dt>failed</dt><dd class="bad">1</dd></div>
+            <div><dt>rows landed</dt><dd>627</dd></div>
+          </dl>
+          <p class='err'><strong>Last failure</strong> HTTP 429 from /agencies/ after 3 attempts</p>
+          <div class="miniwrap"><table class="mini"><thead><tr><th>table</th><th>L0</th><th>L1</th><th>dropped</th><th>days</th><th>latest</th></tr></thead><tbody><tr><td><a href='https://console.cloud.google.com/bigquery?project=project-7c859da6-dddd-4a26-8da&ws=!1m5!1m4!4m3!1sproject-7c859da6-dddd-4a26-8da!2sl1_clean!3sagencies' target='_blank' rel='noopener'>agencies</a></td><td class='n'>350</td><td class='n'>350</td><td class='n'>—</td><td class='n'>1</td><td>2026-08-06</td></tr><tr><td><a href='https://console.cloud.google.com/bigquery?project=project-7c859da6-dddd-4a26-8da&ws=!1m5!1m4!4m3!1sproject-7c859da6-dddd-4a26-8da!2sl1_clean!3spads' target='_blank' rel='noopener'>pads</a></td><td class='n'>238</td><td class='n'>238</td><td class='n'>—</td><td class='n'>1</td><td>2026-08-06</td></tr><tr><td><a href='https://console.cloud.google.com/bigquery?project=project-7c859da6-dddd-4a26-8da&ws=!1m5!1m4!4m3!1sproject-7c859da6-dddd-4a26-8da!2sl1_clean!3sprograms' target='_blank' rel='noopener'>programs</a></td><td class='n'>39</td><td class='n'>39</td><td class='n'>—</td><td class='n'>1</td><td>2026-08-06</td></tr></tbody></table></div>
+        </article>
+        <article class="source fresh">
+          <header>
+            <h3>launches</h3>
+            <span class="pill fresh">fresh</span>
+            <span class="cadence">every 1d</span>
+          </header>
+          <p class="note">Last landed today, within its daily cadence.</p>
+          <dl>
+            <div><dt>runs</dt><dd>7</dd></div>
+            <div><dt>ok</dt><dd>6</dd></div>
+            <div><dt>failed</dt><dd class="bad">1</dd></div>
+            <div><dt>rows landed</dt><dd>2,589</dd></div>
+          </dl>
+          <p class='err'><strong>Last failure</strong> HTTP 429 from /launch/ after 3 attempts</p>
+          <div class="miniwrap"><table class="mini"><thead><tr><th>table</th><th>L0</th><th>L1</th><th>dropped</th><th>days</th><th>latest</th></tr></thead><tbody><tr><td><a href='https://console.cloud.google.com/bigquery?project=project-7c859da6-dddd-4a26-8da&ws=!1m5!1m4!4m3!1sproject-7c859da6-dddd-4a26-8da!2sl1_clean!3sboosters' target='_blank' rel='noopener'>boosters</a></td><td class='n'>549</td><td class='n'>366</td><td class='n'>183</td><td class='n'>2</td><td>2026-08-17</td></tr><tr><td><a href='https://console.cloud.google.com/bigquery?project=project-7c859da6-dddd-4a26-8da&ws=!1m5!1m4!4m3!1sproject-7c859da6-dddd-4a26-8da!2sl1_clean!3slaunches' target='_blank' rel='noopener'>launches</a></td><td class='n'>2,040</td><td class='n'>1,998</td><td class='n'>42</td><td class='n'>3</td><td>2026-08-17</td></tr></tbody></table></div>
+        </article>
+        <article class="source fresh">
+          <header>
+            <h3>itch</h3>
+            <span class="pill fresh">fresh</span>
+            <span class="cadence">every 7d</span>
+          </header>
+          <p class="note">Last landed today, within its weekly cadence.</p>
+          <dl>
+            <div><dt>runs</dt><dd>6</dd></div>
+            <div><dt>ok</dt><dd>6</dd></div>
+            <div><dt>failed</dt><dd class="">0</dd></div>
+            <div><dt>rows landed</dt><dd>8,388</dd></div>
+          </dl>
+          
+          <div class="miniwrap"><table class="mini"><thead><tr><th>table</th><th>L0</th><th>L1</th><th>dropped</th><th>days</th><th>latest</th></tr></thead><tbody><tr><td><a href='https://console.cloud.google.com/bigquery?project=project-7c859da6-dddd-4a26-8da&ws=!1m5!1m4!4m3!1sproject-7c859da6-dddd-4a26-8da!2sl1_clean!3sitch_games' target='_blank' rel='noopener'>itch_games</a></td><td class='n'>8,388</td><td class='n'>7,020</td><td class='n'>1368</td><td class='n'>3</td><td>2026-08-17</td></tr></tbody></table></div>
+        </article>
+        <article class="source fresh">
+          <header>
+            <h3>satellites</h3>
+            <span class="pill fresh">fresh</span>
+            <span class="cadence">every 1d</span>
+          </header>
+          <p class="note">Last landed today, within its daily cadence.</p>
+          <dl>
+            <div><dt>runs</dt><dd>4</dd></div>
+            <div><dt>ok</dt><dd>4</dd></div>
+            <div><dt>failed</dt><dd class="">0</dd></div>
+            <div><dt>rows landed</dt><dd>113,891</dd></div>
+          </dl>
+          
+          <div class="miniwrap"><table class="mini"><thead><tr><th>table</th><th>L0</th><th>L1</th><th>dropped</th><th>days</th><th>latest</th></tr></thead><tbody><tr><td><a href='https://console.cloud.google.com/bigquery?project=project-7c859da6-dddd-4a26-8da&ws=!1m5!1m4!4m3!1sproject-7c859da6-dddd-4a26-8da!2sl1_clean!3ssatellites' target='_blank' rel='noopener'>satellites</a></td><td class='n'>113,891</td><td class='n'>85,380</td><td class='n'>28511</td><td class='n'>3</td><td>2026-08-17</td></tr></tbody></table></div>
+        </article>
+        <article class="source fresh">
+          <header>
+            <h3>appstore</h3>
+            <span class="pill fresh">fresh</span>
+            <span class="cadence">every 1d</span>
+          </header>
+          <p class="note">Last landed today, within its daily cadence.</p>
+          <dl>
+            <div><dt>runs</dt><dd>10</dd></div>
+            <div><dt>ok</dt><dd>10</dd></div>
+            <div><dt>failed</dt><dd class="">0</dd></div>
+            <div><dt>rows landed</dt><dd>274,444</dd></div>
+          </dl>
+          
+          <div class="miniwrap"><table class="mini"><thead><tr><th>table</th><th>L0</th><th>L1</th><th>dropped</th><th>days</th><th>latest</th></tr></thead><tbody><tr><td><a href='https://console.cloud.google.com/bigquery?project=project-7c859da6-dddd-4a26-8da&ws=!1m5!1m4!4m3!1sproject-7c859da6-dddd-4a26-8da!2sl1_clean!3sappstore_charts' target='_blank' rel='noopener'>appstore_charts</a></td><td class='n'>274,444</td><td class='n'>272,452</td><td class='n'>1992</td><td class='n'>6</td><td>2026-08-17</td></tr></tbody></table></div>
+        </article></div>
+
+  <h2>Layer integrity</h2>
+  <div class="gauges">
+    <div class="gauge ok">
+      <div class="glabel">L0 rows landed<span>399,939</span></div>
+      <div class="gbar"><i style="width:100%"></i></div>
+      <div class="gnote">append-only, across 8 tables</div>
+    </div>
+    <div class="gauge ok">
+      <div class="glabel">L1 rows served<span>367,843</span></div>
+      <div class="gbar"><i style="width:92.0%"></i></div>
+      <div class="gnote">32,096 duplicate rows resolved by the views
+        (8.03%)</div>
+    </div>
+  </div>
+  <p class="note" style="max-width:64ch">Those 32,096 rows are the same grain
+  landed twice by re-runs. L0 keeps both because it is the log of what the source said;
+  the L1 view picks the later run. Querying <code>l0_raw</code> directly would count them all.</p>
+
+  <h2>Contracts</h2>
+  <p class="muted" style="text-align:left">L1 contracts from <code>apps/dbt-agent</code>, recorded per run into
+  <code>meta.contract_runs</code>. Green is a pass. A check that has never failed and one
+  that fails intermittently look identical on any single morning.</p>
+  <div class="contracts"><div class="tablewrap"><table><thead><tr><th>check</th><th>kind</th><th>last 30 days</th><th>outcome</th></tr></thead><tbody><tr><td title="appstore_rank_within_apple_cap"><code>appstore_rank_within_apple_cap</code></td><td class="muted">rule</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="grain_appstore_charts"><code>appstore_charts</code></td><td class="muted">grain</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="grain_boosters"><code>boosters</code></td><td class="muted">grain</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="grain_itch_games"><code>itch_games</code></td><td class="muted">grain</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="grain_launches"><code>launches</code></td><td class="muted">grain</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="grain_satellites"><code>satellites</code></td><td class="muted">grain</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="itch_ratings_only_on_top_rated"><code>itch_ratings_only_on_top_rated</code></td><td class="muted">rule</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="launches_flown_matches_status"><code>launches_flown_matches_status</code></td><td class="muted">rule</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="satellites_orbit_class_matches_altitude"><code>satellites_orbit_class_matches_altitude</code></td><td class="muted">rule</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_accepted_values_l1_clean_appstore_charts_chart_type__top_free__top_paid__top_grossing__top_free_ipad__top_paid_ipad__top_grossing_ipad"><code>appstore_charts.chart_type</code></td><td class="muted">accepted_values</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_accepted_values_l1_clean_appstore_charts_primary_genre__Games"><code>appstore_charts.primary_genre</code></td><td class="muted">accepted_values</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_accepted_values_l1_clean_itch_games_browse_sort__newest__top_rated__top_sellers__featured__new_and_popular"><code>itch_games.browse_sort</code></td><td class="muted">accepted_values</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_accepted_values_l1_clean_launches_provider__SpaceX__Rocket_Lab"><code>launches.provider</code></td><td class="muted">accepted_values</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_accepted_values_l1_clean_launches_status__Success__Failure__Partial_Failure__Go__TBD__TBC"><code>launches.status</code></td><td class="muted">accepted_values</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_accepted_values_l1_clean_satellites_object_group__active__starlink__oneweb__stations__geo"><code>satellites.object_group</code></td><td class="muted">accepted_values</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_accepted_values_l1_clean_satellites_orbit_class__LEO__MEO__GEO__HEO__BEYOND_GEO"><code>satellites.orbit_class</code></td><td class="muted">accepted_values</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_agencies_agency_id"><code>agencies.agency_id</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_appstore_charts_app_id"><code>appstore_charts.app_id</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_appstore_charts_artist_id"><code>appstore_charts.artist_id</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_appstore_charts_chart_country"><code>appstore_charts.chart_country</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_appstore_charts_chart_rank"><code>appstore_charts.chart_rank</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_appstore_charts_ingested_date"><code>appstore_charts.ingested_date</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_boosters_booster_id"><code>boosters.booster_id</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_boosters_ingested_date"><code>boosters.ingested_date</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_itch_games_browse_rank"><code>itch_games.browse_rank</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_itch_games_browse_sort"><code>itch_games.browse_sort</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_itch_games_game_id"><code>itch_games.game_id</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_itch_games_ingested_date"><code>itch_games.ingested_date</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_itch_games_is_free"><code>itch_games.is_free</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_launches_date_is_firm"><code>launches.date_is_firm</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_launches_has_flown"><code>launches.has_flown</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_launches_ingested_date"><code>launches.ingested_date</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_launches_launch_id"><code>launches.launch_id</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_pads_pad_id"><code>pads.pad_id</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_programs_program_id"><code>programs.program_id</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_satellites_ingested_date"><code>satellites.ingested_date</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_satellites_norad_cat_id"><code>satellites.norad_cat_id</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_satellites_object_group"><code>satellites.object_group</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr><tr><td title="source_not_null_l1_clean_satellites_orbit_class"><code>satellites.orbit_class</code></td><td class="muted">not_null</td><td class="strip"><i class="ok"></i><i class="bad"></i><i class="ok"></i></td><td class="muted">2 run(s), never failed</td></tr></tbody></table></div></div>
+
+  <h2>Spend</h2>
+  <div class="gauges">
+    
+        <div class="gauge ok">
+          <div class="glabel">Month vs hard cap<span>11.6%</span></div>
+          <div class="gbar"><i style="width:11.6%"></i></div>
+          <div class="gnote">11.6 GB of 100.0 GB · 81 queries</div>
+        </div>
+    
+        <div class="gauge ok">
+          <div class="glabel">Month vs free tier<span>1.1%</span></div>
+          <div class="gbar"><i style="width:1.1%"></i></div>
+          <div class="gnote">billable $0.00</div>
+        </div>
+  </div>
+
+  <h2>Recent queries</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th></th><th>when</th><th>query</th><th class="n">scanned</th><th class="n">rows</th></tr></thead>
+      <tbody><tr><td><span class=ok-dot></span></td><td class='when'>2026-08-17 14:46</td><td>SELECT source, run_id, request, sequence, payload_bytes, …</td><td class='n'>50.2 KB</td><td class='n'>1</td></tr><tr><td><span class=ok-dot></span></td><td class='when'>2026-08-17 14:35</td><td>SELECT source_name, status, ROUND(age_seconds/3600,1) age…</td><td class='n'>335.0 B</td><td class='n'>8</td></tr><tr><td><span class=ok-dot></span></td><td class='when'>2026-08-17 14:35</td><td>SELECT status, COUNT(*) n, MIN(run_ts) first_run FROM `pr…</td><td class='n'>546.0 B</td><td class='n'>1</td></tr><tr><td><span class=ok-dot></span></td><td class='when'>2026-08-17 14:12</td><td>SELECT object_name, object_group, orbit_class, ROUND(mean…</td><td class='n'>9.7 MB</td><td class='n'>1</td></tr><tr><td><span class=ok-dot></span></td><td class='when'>2026-08-17 14:12</td><td>SELECT ingested_date, COUNT(*) n, COUNTIF(date_is_firm IS…</td><td class='n'>180.7 KB</td><td class='n'>3</td></tr><tr><td><span class=ok-dot></span></td><td class='when'>2026-08-17 14:12</td><td>SELECT COUNTIF(date_is_firm IS NULL) firm_null, COUNTIF(n…</td><td class='n'>180.7 KB</td><td class='n'>1</td></tr><tr><td><span class=ok-dot></span></td><td class='when'>2026-08-17 14:12</td><td>SELECT ingested_date, COUNT(*) rows_, COUNTIF(artist_id I…</td><td class='n'>23.0 MB</td><td class='n'>6</td></tr><tr><td><span class=ok-dot></span></td><td class='when'>2026-08-17 14:09</td><td>SELECT &#x27;chart_type&#x27; k, STRING_AGG(DISTINCT chart_type ORD…</td><td class='n'>26.9 MB</td><td class='n'>3</td></tr><tr><td><span class=ok-dot></span></td><td class='when'>2026-08-17 04:46</td><td>itch games in 3+ sorts</td><td class='n'>0.0 B</td><td class='n'>32</td></tr><tr><td><span class=ok-dot></span></td><td class='when'>2026-08-17 04:46</td><td>itch games in 3+ sorts</td><td class='n'>1.4 MB</td><td class='n'>32</td></tr><tr><td><span class=ok-dot></span></td><td class='when'>2026-08-17 04:45</td><td>itch picks by genre</td><td class='n'>0.0 B</td><td class='n'>144</td></tr><tr><td><span class=ok-dot></span></td><td class='when'>2026-08-17 04:45</td><td>itch picks by genre</td><td class='n'>1.4 MB</td><td class='n'>144</td></tr></tbody>
+    </table>
+  </div>
+
+  <footer>construct-analyst · pipeline_health.py + publish_pipeline.py ·
+    freshness is judged against each source's declared cadence, not wall-clock age</footer>
+</div>

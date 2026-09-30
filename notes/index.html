@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Notes · Michael Furlong</title>
+<meta name="description" content="Twelve short engineering notes from building a BigQuery data platform: partitions, grain checks, semantic layers, spend guards, and why tests were not enough.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="../assets/site.css">
+<style>
+.page{max-width:var(--max);margin-inline:auto;padding-inline:var(--gutter);padding-block:clamp(40px,6vw,72px)}
+.intro{max-width:66ch}
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:clamp(28px,5vw,72px);margin-top:48px;align-items:start}
+.toc{position:sticky;top:84px;display:grid;gap:2px;font-size:.88rem}
+.toc a{color:var(--fg-2);padding:6px 10px;border-left:2px solid var(--line);display:flex;gap:10px}
+.toc a:hover{color:var(--fg);text-decoration:none;border-color:var(--line-2)}
+.toc a .n{font-family:var(--mono);font-size:.74rem;color:var(--accent);width:1.6em;flex:none}
+.list{display:grid;gap:0;max-width:720px}
+.note{padding-block:36px;border-top:1px solid var(--line);scroll-margin-top:84px;display:grid;gap:14px}
+.note:first-child{border-top:0;padding-top:0}
+.note .n{font-family:var(--mono);font-size:.78rem;color:var(--accent)}
+.note h2{font-size:1.45rem}
+.note p{color:var(--fg-2)}
+.note pre{margin:0}
+.note .rule{margin-top:4px;padding:12px 16px;border-left:2px solid var(--accent);color:var(--fg);font-weight:600;background:var(--surface);border-radius:0 var(--r) var(--r) 0}
+@media(max-width:900px){.layout{grid-template-columns:1fr}.toc{position:static}}
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="../">Michael Furlong</a>
+    <ul>
+      <li class="keep"><a href="../#work">Work</a></li>
+      <li class="keep"><a href="./" aria-current="page">Notes</a></li>
+      <li><a href="../resume/">Resume</a></li>
+      <li><a href="https://github.com/mfurlong64" rel="noopener">GitHub</a></li>
+      <li><a href="https://www.linkedin.com/in/michael-furlong-9a116043" rel="noopener">LinkedIn</a></li>
+    </ul>
+  </div>
+</header>
+
+<main class="page">
+  <h1>Notes from building the platform</h1>
+  <p class="lede intro">Twelve things I learned building <a href="../construct/">construct-analyst</a>, a BigQuery data platform, over a summer. Each one was paid for with a number that looked right and was not. They are written as rules because that is how they now live in the code: each has a test, a guard, or a build step that fails when it is broken.</p>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Notes">
+      <a href="#latest-partition"><span class="n">01</span>The latest partition is not the widest one</a>
+      <a href="#uniqueness"><span class="n">02</span>Uniqueness is not correctness</a>
+      <a href="#one-definition"><span class="n">03</span>The same definition existed three ways</a>
+      <a href="#blank"><span class="n">04</span>Blank has several spellings</a>
+      <a href="#ledger"><span class="n">05</span>Record spend where the spending happens</a>
+      <a href="#guard"><span class="n">06</span>The guard refuses; it does not warn</a>
+      <a href="#typed-number"><span class="n">07</span>A hand-typed number fails the build</a>
+      <a href="#test-held-bug"><span class="n">08</span>A test was holding the bug in place</a>
+      <a href="#look"><span class="n">09</span>Tests were not enough. Look at it</a>
+      <a href="#backfill"><span class="n">10</span>Backfill is a property of the source</a>
+      <a href="#renderer"><span class="n">11</span>The renderer does no arithmetic</a>
+      <a href="#api"><span class="n">12</span>Prefer the API to the scan</a>
+    </nav>
+
+    <div class="list">
+      <article class="note" id="latest-partition">
+        <span class="n">01</span>
+        <h2>The latest partition is not the widest one</h2>
+        <p>Every source lands in a date-partitioned table, and the obvious way to read "the current state" is to take the newest partition. That was wrong three times, for three different reasons. The launch feed is incremental, so the newest partition held 42 of 983 launches. The App Store sweep runs narrow on weekdays and wide on Sundays, so the newest partition was usually the smallest one, 164 apps against 8,065. And a failed run can leave a partition that exists and is nearly empty.</p>
+        <p>The fix is a function that picks the widest recent snapshot by row count, and a rule that nothing else is allowed to choose a partition. It lives in the semantic layer, next to the other definitions, so there is one copy to get right.</p>
+        <div class="rule">Never read MAX(ingested_date). Ask which snapshot is complete, and let one function answer.</div>
+      </article>
+
+      <article class="note" id="uniqueness">
+        <span class="n">02</span>
+        <h2>Uniqueness is not correctness</h2>
+        <p>Two dimension tables in the star schema passed every grain check: one row per key, no duplicates, no nulls. They also reported 1,623 and 1,625 flown launches against a truth of 810. The keys were unique because they included the ingest date. The business key was not, and nothing checked that.</p>
+        <p>What was missing was a single rule for "one row per business key, latest ingest wins", applied before the dimension is built. It now exists once, and both dimensions use it. The grain checks stayed; a count-against-truth check was added beside them.</p>
+        <div class="rule">A grain check proves the key is unique. It does not prove the key is the right one.</div>
+      </article>
+
+      <article class="note" id="one-definition">
+        <span class="n">03</span>
+        <h2>The same definition existed three ways</h2>
+        <p>The App Store's game subgenre is a small categorical, sixteen values. One board spelled the role-playing genre "Role-Playing", another "Roleplaying", and the table catalogue documented taking the localised label from the feed, which turns sixteen subgenres into 148. Three copies of one idea, each a little different, each written by someone who did not know about the others.</p>
+        <p>There is now one module that owns definitions like this, and a test that scans the codebase and fails if a fourth copy appears. The canonical labels are Apple's own US storefront strings, and the test was mutation-checked: I put a fourth copy in and watched it fail.</p>
+        <div class="rule">Definitions live in one file. A test guards the file, not the people.</div>
+      </article>
+
+      <article class="note" id="blank">
+        <span class="n">04</span>
+        <h2>Blank has several spellings</h2>
+        <p>A public table of 86,545 Steam games ships four playtime columns that are zero for every row, two text columns that are the empty string for every row, and a tags column whose value is the literal two-character string "{}" for every row. A null check finds none of that. An average over the playtime columns returns a plausible number.</p>
+        <p>So the platform profiles a result set before anyone writes a conclusion on it: null and zero coverage, cardinality, quartiles, outliers, and a set of quality flags that treat all-zero and all-empty as critical. The profile runs from the CLI and in the app, and it runs before the analysis step, not after.</p>
+        <div class="rule">Profile a table before you believe it. Blank is spelled '', {}, [], 0 and NULL.</div>
+      </article>
+
+      <article class="note" id="ledger">
+        <span class="n">05</span>
+        <h2>Record spend where the spending happens</h2>
+        <p>Every query was supposed to be recorded in a cost ledger and a history log. The callers were responsible for that, and the callers were many. When I audited the ledger against BigQuery's own job list, it had seen 32 of 145 real jobs.</p>
+        <p>The recording moved inside the one function that runs a query. Callers cannot forget what they no longer do. The same day, the month-to-date figure on the health board became believable for the first time.</p>
+        <div class="rule">Instrument the choke point. Anything a caller must remember, a caller will forget.</div>
+      </article>
+
+      <article class="note" id="guard">
+        <span class="n">06</span>
+        <h2>The guard refuses; it does not warn</h2>
+        <p>BigQuery will tell you, for free, how many bytes a query would scan. The platform runs that dry run before every real execution and compares it to a 100 MiB cap. Over the cap, it stops and prints the estimate, the cost at on-demand rates, and which tables it would have read. A flag raises the ceiling to 1 GiB for a deliberate large read; a monthly cap binds even then; a server-side daily quota binds even if all of that is wrong.</p>
+        <p>Warnings get scrolled past. Refusals get read. The whole platform, five feeds, a Sunday sweep of 391 requests, hundreds of analyses, has billed nothing.</p>
+        <div class="rule">Estimate first, refuse over the line, and keep a limit the code cannot reach.</div>
+      </article>
+
+      <article class="note" id="typed-number">
+        <span class="n">07</span>
+        <h2>A hand-typed number fails the build</h2>
+        <p>A published board once said one thing in its prose and showed another in its chart. Both were from the same data; the prose had been typed from an earlier run. Nobody noticed for a while, because the prose read well.</p>
+        <p>Walkthrough boards now render every figure in the argument from a placeholder that is computed from the tile's own DataFrame at build time: a value, a share, a rank window, a comparison against the next five. If a literal number appears in a step, the build fails. Years are the one exception, and they have to be declared.</p>
+        <div class="rule">Derive the claim from the data it stands next to, or do not make the claim.</div>
+      </article>
+
+      <article class="note" id="test-held-bug">
+        <span class="n">08</span>
+        <h2>A test was holding the bug in place</h2>
+        <p>The board summary summed gigabytes scanned across every tile, including tiles served from cache, which scan nothing. A board of one 0.287 GB query and two cached copies printed 0.86 GB scanned. The unit test asserted 0.18 GB for two cache hits, so the test agreed with the bug and would have failed a fix.</p>
+        <p>Fixing the code meant fixing the test, and then asking why the test had been written to a wrong expectation: it was written from the output, not from the definition. The definition now appears in the test's name.</p>
+        <div class="rule">When a fix breaks a test, ask whether the test was ever right.</div>
+      </article>
+
+      <article class="note" id="look">
+        <span class="n">09</span>
+        <h2>Tests were not enough. Look at it</h2>
+        <p>Ninety-three passing tests shipped four CSS bugs and a board whose own thesis contradicted its chart. Later, with more tests: a cadence rendered as "within its 1 day ago cadence", a table clipped so a whole column vanished, a series flattened onto a shared axis so 170 read as zero, and a currency label rendered as italic maths because matplotlib ate the dollar signs. Every one of those passed its unit tests. None survived being looked at.</p>
+        <p>So every published page is screenshotted in a real browser, at two widths and both themes, and the build fails on console errors or horizontal overflow. The 3D pages get more: a script opens each mode, freezes the clock, waits for real frames, measures the canvas, and clicks a shape to confirm the data card carries every column.</p>
+        <div class="rule">A test proves the code you thought to test. A screenshot shows what shipped.</div>
+      </article>
+
+      <article class="note" id="backfill">
+        <span class="n">10</span>
+        <h2>Backfill is a property of the source</h2>
+        <p>Three of the five feeds serve current state only. Apple's chart feed, the itch.io browse pages and the satellite catalogue have no archive; if a day is missed it is gone. And the raw layer had stored what the parser made of each response, never the response itself, so a parser bug could not be replayed either.</p>
+        <p>The forward half is fixable: raw response bodies are now archived, keyed by run and request, and a re-parse of an archived body reproduces its rows with no network call. The backward half is not fixable, and the docs say so, because the honest answer to "can we backfill" is a fact about the source, not about effort.</p>
+        <div class="rule">Keep the raw response. Know which sources have a past.</div>
+      </article>
+
+      <article class="note" id="renderer">
+        <span class="n">11</span>
+        <h2>The renderer does no arithmetic</h2>
+        <p>The boards can switch a tile into 3D: a fish per row, a spike per country on a globe, three numeric columns as a point cloud. All of that is JavaScript, and JavaScript in a browser is hard to test. So every height, coordinate, colour bucket and label is computed in Python, under pytest, and travels to the browser in a payload. The renderer only draws what it is given.</p>
+        <p>The other half of the contract: nothing is dropped quietly. Countries that could not be placed, draw caps, aggregations, the scale that was chosen, all travel in the same payload and print under the canvas where the reader can see them.</p>
+        <div class="rule">Put the arithmetic where the tests are. Print what the picture leaves out.</div>
+      </article>
+
+      <article class="note" id="api">
+        <span class="n">12</span>
+        <h2>Prefer the API to the scan</h2>
+        <p>The World Bank's indicators are mirrored in BigQuery, and reading fisheries for 199 countries from that mirror cost a 287 MB scan, because the mirror is not partitioned. The same indicators come from the World Bank's own HTTP API in one request per panel, for free, with the same numbers. Twenty-eight years of four panels plus a bilateral trade matrix for 5,821 country pairs took about thirty requests.</p>
+        <p>Two rules came out of the globes that followed. One scale across the whole time series, never one per year, or the growth the slider exists to show disappears. And a missing year is no-data grey, never zero.</p>
+        <div class="rule">Before scanning a warehouse mirror, ask whether the source will just tell you.</div>
+      </article>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Michael Furlong</span>
+    <span><a href="../">Back to the portfolio</a> · <a href="../construct/">The platform these came from</a></span>
+  </div>
+</footer>
+<script src="../assets/site.js"></script>
+</body>
+</html>

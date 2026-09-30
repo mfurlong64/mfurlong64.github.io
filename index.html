@@ -3,54 +3,95 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Michael Furlong</title>
-<meta name="description" content="Michael Furlong: Director-level BI leader, twelve years in analytics, eight building data organizations at Unity. A BigQuery data platform with live demos, engineering notes, and a resume.">
-<meta property="og:title" content="Michael Furlong">
-<meta property="og:description" content="Data leader who ships the tooling. A BigQuery data platform with live demos, engineering notes, and a resume.">
+<title>construct ANALYST · Michael Furlong</title>
+<meta name="description" content="construct-analyst: a BigQuery data platform by Michael Furlong. Business question in, verified board out. Query a snapshot of its tables right here in the browser.">
+<meta property="og:title" content="construct ANALYST · Michael Furlong">
+<meta property="og:description" content="A BigQuery data platform with a spend guard that refuses, a profile that runs before the conclusion, and boards you can hand over as one file. Query it from this page.">
 <meta property="og:image" content="https://mfurlong64.github.io/construct/shots/worlds-catch.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <link rel="stylesheet" href="assets/site.css">
 <style>
-/* hero: copy on the left, a slow-drifting wall of real board screenshots on the right */
+.brand .mark{display:inline-block;width:11px;height:20px;position:relative;margin-right:10px;vertical-align:-4px}
+.brand .mark::before,.brand .mark::after{content:"";position:absolute;background:var(--accent);border-radius:2px}
+.brand .mark::before{left:0;top:0;width:5px;height:20px}
+.brand .mark::after{left:6px;top:10px;width:5px;height:10px}
+.brand{font-family:var(--mono);font-weight:600}
+.brand small{color:var(--accent);font-size:.72rem;letter-spacing:.14em;margin-left:6px;font-weight:500}
+
+/* hero */
 .hero{border-top:0;padding-block:clamp(40px,6vw,88px) 0;overflow:hidden;position:relative}
-.hero .wrap{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);gap:clamp(24px,4vw,56px);align-items:center;min-height:0}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);gap:clamp(24px,4vw,56px);align-items:center}
 .hero .copy{display:grid;gap:22px;position:relative;z-index:2;padding-block:24px}
-.hero .lede{margin:0;font-size:1.12rem;max-width:44ch}
+.hero .lede{margin:0;font-size:1.12rem;max-width:46ch}
 .ctas{display:flex;flex-wrap:wrap;gap:12px}
 .wall{position:relative;height:min(62vh,600px);min-width:0;perspective:1200px;-webkit-mask-image:linear-gradient(to bottom,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(to bottom,transparent,#000 12%,#000 88%,transparent)}
-.wall .tilt{position:absolute;inset:-10% -6%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;transform:rotateX(14deg) rotateY(-10deg) rotateZ(6deg) scale(1.02);transform-origin:50% 50%}
+.wall .tilt{position:absolute;inset:-10% -6%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;transform:rotateX(14deg) rotateY(-10deg) rotateZ(6deg) scale(1.02)}
 .col{display:flex;flex-direction:column;gap:14px;will-change:transform;animation:drift var(--d,80s) linear infinite}
 .col.up{animation-direction:reverse}
 .col img{border-radius:10px;border:1px solid var(--line-2);aspect-ratio:16/10;object-fit:cover;object-position:top;width:100%;box-shadow:0 20px 50px -20px rgba(0,0,0,.9)}
 @keyframes drift{from{transform:translateY(0)}to{transform:translateY(-50%)}}
 .hero::after{content:"";position:absolute;inset:auto 0 0 0;height:120px;background:linear-gradient(to bottom,transparent,var(--bg));pointer-events:none}
-@media(max-width:900px){.hero .wrap{grid-template-columns:1fr;min-height:0}.wall{height:340px}.wall .tilt{transform:rotateX(10deg) rotateZ(4deg)}}
+@media(max-width:900px){.hero .wrap{grid-template-columns:1fr}.wall{height:340px}.wall .tilt{transform:rotateX(10deg) rotateZ(4deg)}}
 @media(prefers-reduced-motion:reduce){.col{animation:none}}
 
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;padding-block:36px;margin-top:-24px;border-top:1px solid var(--line)}
-.stat{border-top:2px solid var(--accent);padding-top:12px}
-.stat b{display:block;font-family:var(--mono);font-size:clamp(1.6rem,3vw,2.2rem);font-weight:600;letter-spacing:-.02em;line-height:1;font-variant-numeric:tabular-nums}
-.stat span{display:block;color:var(--muted);font-size:.86rem;margin-top:8px}
-@media(max-width:900px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+/* console */
+#query{padding-top:clamp(40px,6vw,72px)}
+.console{margin-top:28px;display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:16px;align-items:start}
+.console>*{min-width:0}
+.qs{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.q{font-family:var(--sans);font-size:.86rem;font-weight:600;padding:8px 13px;border-radius:999px;border:1px solid var(--line-2);color:var(--fg-2);background:transparent;cursor:pointer;text-align:left}
+.q:hover{color:var(--fg);background:var(--surface)}
+.q[aria-pressed="true"]{border-color:var(--accent);color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.editor{border:1px solid var(--line-2);border-radius:14px;overflow:hidden;background:#090c12}
+.editor .bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px 8px 14px;border-bottom:1px solid var(--line);font-family:var(--mono);font-size:.74rem;color:var(--muted)}
+.editor textarea{display:block;width:100%;min-height:190px;padding:14px 16px;border:0;background:transparent;color:var(--fg);font-family:var(--mono);font-size:.84rem;line-height:1.55;resize:vertical;tab-size:2}
+.editor textarea:focus{outline:none}
+.status{font-family:var(--mono);font-size:.78rem;color:var(--muted);padding:10px 2px;min-height:38px}
+.status.ok{color:var(--ok)}.status.err{color:var(--err)}.status.busy{color:var(--accent)}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface);max-height:480px;overflow-y:auto}
+table{border-collapse:collapse;width:100%;font-size:.84rem}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:0;background:var(--bg-2);font-family:var(--mono);font-weight:500;font-size:.74rem;color:var(--accent);letter-spacing:.02em}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+td .null{color:var(--muted);font-family:var(--mono);font-size:.74rem}
+.empty{color:var(--muted);padding:12px}
+#chart{margin-top:14px}
+#chart svg{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:8px}
+#chart .bar{fill:var(--accent)}#chart .lab{fill:var(--fg-2);font:11px var(--mono)}#chart .val{fill:var(--muted);font:11px var(--mono)}#chart .ct{fill:var(--fg);font:600 12px var(--sans)}#chart .axis{stroke:var(--line-2)}
+.side{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:14px;font-size:.84rem}
+.side h3{font-size:.8rem;font-family:var(--mono);font-weight:500;color:var(--muted);letter-spacing:.04em;margin-bottom:8px}
+.side details{border-top:1px solid var(--line);padding:6px 0}
+.side summary{cursor:pointer;display:flex;justify-content:space-between;gap:10px;font-family:var(--mono);font-size:.8rem;color:var(--fg)}
+.side summary .tc{color:var(--muted);font-size:.72rem}
+.side ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:4px}
+.side li{display:grid;gap:1px}
+.side li code{font-family:var(--mono);font-size:.76rem;color:var(--accent)}
+.side li span{color:var(--muted);font-size:.74rem;line-height:1.35}
+.rules{margin-top:18px;color:var(--muted);font-size:.86rem;max-width:70ch}
+@media(max-width:900px){.console{grid-template-columns:1fr}}
 
-.feature{margin-top:40px;display:grid;gap:28px}
-.feature .frame a.shot img{aspect-ratio:21/9}
-.links{display:flex;flex-wrap:wrap;gap:12px 22px;font-size:.95rem;align-items:center}
-.links .note{color:var(--muted);font-family:var(--mono);font-size:.8rem}
-.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4vw,56px);margin-top:64px;padding-top:48px;border-top:1px solid var(--line);align-items:start}
-.pair>*{min-width:0}
-.pair p{color:var(--fg-2);margin-top:12px}
-@media(max-width:900px){.pair{grid-template-columns:1fr}}
-
-.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:40px}
-.trio>*{min-width:0}
+/* boards */
+.bento{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:40px}
+.bento>*{min-width:0}
 .card.big{grid-column:span 2;grid-row:span 2}
 .card.big img{aspect-ratio:auto;height:100%;position:absolute;inset:0;object-fit:cover;object-position:50% 0}
-.card.big .cap{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(11,14,20,.97),rgba(11,14,20,.8) 70%,transparent);padding:44px 18px 18px}
-@media(max-width:900px){.trio{grid-template-columns:repeat(2,minmax(0,1fr))}.card.big{grid-column:span 2;grid-row:span 1}.card.big img{position:static;aspect-ratio:16/9;height:auto}.card.big .cap{position:static;background:none;padding:14px 16px}}
-@media(max-width:520px){.trio{grid-template-columns:1fr}.card.big{grid-column:span 1}}
+.card.big .cap{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(to top,rgba(11,14,20,.96),rgba(11,14,20,.75) 70%,transparent);padding:44px 18px 18px}
+@media(max-width:900px){.bento{grid-template-columns:repeat(2,minmax(0,1fr))}.card.big{grid-column:span 2;grid-row:span 1}.card.big img{position:static;aspect-ratio:16/9;height:auto}.card.big .cap{position:static;background:none;padding:14px 16px}}
+@media(max-width:520px){.bento{grid-template-columns:1fr}.card.big{grid-column:span 1}}
 
+/* how */
+.how{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(28px,5vw,72px);margin-top:40px;align-items:start}
+.how>*{min-width:0}
+.layer{display:grid;grid-template-columns:110px minmax(0,1fr);gap:18px;padding:18px 0;border-top:1px solid var(--line)}
+.layer:last-child{border-bottom:1px solid var(--line)}
+.layer .k{font-family:var(--mono);font-size:.8rem;color:var(--accent);padding-top:4px}
+.layer p{color:var(--fg-2);font-size:.97rem;margin-top:4px}
+.term+.term{margin-top:16px}
+@media(max-width:900px){.how{grid-template-columns:1fr}}
+@media(max-width:520px){.layer{grid-template-columns:1fr;gap:4px}}
+
+/* notes + about */
 .notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:40px}
 .notes>*{min-width:0}
 .note-card{display:grid;gap:10px;padding:22px;border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--fg);align-content:start}
@@ -58,21 +99,15 @@
 .note-card .n{font-family:var(--mono);font-size:.74rem;color:var(--accent)}
 .note-card p{color:var(--muted);font-size:.92rem}
 @media(max-width:800px){.notes{grid-template-columns:1fr}}
-
-.timeline{margin-top:40px;display:grid;max-width:820px}
-.row{display:grid;grid-template-columns:120px minmax(0,1fr);gap:18px;padding:18px 0;border-top:1px solid var(--line)}
-.row:last-child{border-bottom:1px solid var(--line)}
-.row .y{font-family:var(--mono);font-size:.82rem;color:var(--accent);padding-top:4px;font-variant-numeric:tabular-nums}
-.row p{color:var(--fg-2);font-size:.97rem;margin-top:4px}
-@media(max-width:520px){.row{grid-template-columns:1fr;gap:4px}}
-
 .about .wrap{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(28px,5vw,64px);align-items:start}
 .about .wrap>*{min-width:0}
+.about .lede a{white-space:nowrap}
 .contact{border:1px solid var(--line);border-radius:14px;padding:22px;display:grid;gap:14px;background:var(--surface)}
 .contact .row2{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .contact code{font-family:var(--mono);font-size:.9rem;color:var(--fg);user-select:all}
 .contact button{font:inherit;font-family:var(--mono);font-size:.78rem;padding:7px 12px;border-radius:999px;border:1px solid var(--line-2);background:transparent;color:var(--fg-2);cursor:pointer}
 .contact button:hover{color:var(--fg);background:var(--bg-2)}
+.side-projects{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:16px;font-size:.92rem}
 @media(max-width:900px){.about .wrap{grid-template-columns:1fr}}
 </style>
 </head>
@@ -80,13 +115,13 @@
 
 <header class="nav">
   <div class="wrap">
-    <a class="brand" href="#top">Michael Furlong</a>
+    <a class="brand" href="#top"><span class="mark" aria-hidden="true"></span>construct<small>ANALYST</small></a>
     <ul>
-      <li class="keep"><a href="#work">Work</a></li>
+      <li class="keep"><a href="#query">Query</a></li>
+      <li><a href="#boards">Boards</a></li>
+      <li><a href="#how">How it works</a></li>
       <li><a href="notes/">Notes</a></li>
-      <li class="keep"><a href="resume/">Resume</a></li>
-      <li><a href="https://github.com/mfurlong64" rel="noopener">GitHub</a></li>
-      <li><a href="https://www.linkedin.com/in/michael-furlong-9a116043" rel="noopener">LinkedIn</a></li>
+      <li class="keep"><a href="#about">About</a></li>
     </ul>
   </div>
 </header>
@@ -96,100 +131,239 @@
 <section class="hero">
   <div class="wrap">
     <div class="copy">
-      <h1>Data leader who ships the tooling.</h1>
-      <p class="lede">Twelve years in analytics, eight of them building the data organization behind Unity's Ads marketplace and Engine. I run teams, and I still build the thing myself when that is the fastest way to know it is right.</p>
+      <h1>A question in. A board you can trust out.</h1>
+      <p class="lede">construct-analyst is a BigQuery data platform: a business question becomes validated SQL, the result is profiled before anyone believes it, and the answer ships as one page. Built by <a href="#about">Michael Furlong</a>. Query a snapshot of its tables right here.</p>
       <div class="ctas">
-        <a class="btn primary" href="#work">See the work</a>
-        <a class="btn ghost" href="resume/">Read the resume</a>
+        <a class="btn primary" href="#query">Run a query</a>
+        <a class="btn ghost" href="construct/">Open the live boards</a>
       </div>
     </div>
     <div class="wall" aria-hidden="true">
       <div class="tilt">
         <div class="col" style="--d:96s">
-          <img src="construct/shots/worlds-catch.jpg" alt=""><img src="construct/shots/economy-globe.jpg" alt=""><img src="shots/playroom.jpg" alt=""><img src="construct/shots/pipeline.jpg" alt="">
-          <img src="construct/shots/worlds-catch.jpg" alt=""><img src="construct/shots/economy-globe.jpg" alt=""><img src="shots/playroom.jpg" alt=""><img src="construct/shots/pipeline.jpg" alt="">
+          <img src="construct/shots/worlds-catch.jpg" alt=""><img src="construct/shots/economy-globe.jpg" alt=""><img src="construct/shots/orbit-explorer.jpg" alt=""><img src="construct/shots/pipeline.jpg" alt="">
+          <img src="construct/shots/worlds-catch.jpg" alt=""><img src="construct/shots/economy-globe.jpg" alt=""><img src="construct/shots/orbit-explorer.jpg" alt=""><img src="construct/shots/pipeline.jpg" alt="">
         </div>
         <div class="col up" style="--d:120s">
-          <img src="construct/shots/climate-globe.jpg" alt=""><img src="construct/shots/data-aquarium.jpg" alt=""><img src="shots/broadsides.jpg" alt=""><img src="construct/shots/index.jpg" alt="">
-          <img src="construct/shots/climate-globe.jpg" alt=""><img src="construct/shots/data-aquarium.jpg" alt=""><img src="shots/broadsides.jpg" alt=""><img src="construct/shots/index.jpg" alt="">
+          <img src="construct/shots/climate-globe.jpg" alt=""><img src="construct/shots/data-aquarium.jpg" alt=""><img src="construct/shots/globe-explorer.jpg" alt=""><img src="construct/shots/index.jpg" alt="">
+          <img src="construct/shots/climate-globe.jpg" alt=""><img src="construct/shots/data-aquarium.jpg" alt=""><img src="construct/shots/globe-explorer.jpg" alt=""><img src="construct/shots/index.jpg" alt="">
         </div>
         <div class="col" style="--d:108s">
-          <img src="construct/shots/globe-explorer.jpg" alt=""><img src="construct/shots/orbit-explorer.jpg" alt=""><img src="shots/crokinole.jpg" alt=""><img src="construct/shots/worlds-catch.jpg" alt="">
-          <img src="construct/shots/globe-explorer.jpg" alt=""><img src="construct/shots/orbit-explorer.jpg" alt=""><img src="shots/crokinole.jpg" alt=""><img src="construct/shots/worlds-catch.jpg" alt="">
+          <img src="construct/shots/globe-explorer.jpg" alt=""><img src="construct/shots/pipeline.jpg" alt=""><img src="construct/shots/climate-globe.jpg" alt=""><img src="construct/shots/worlds-catch.jpg" alt="">
+          <img src="construct/shots/globe-explorer.jpg" alt=""><img src="construct/shots/pipeline.jpg" alt=""><img src="construct/shots/climate-globe.jpg" alt=""><img src="construct/shots/worlds-catch.jpg" alt="">
         </div>
       </div>
     </div>
   </div>
+</section>
+
+<section id="query">
   <div class="wrap">
-    <div class="stats reveal">
-      <div class="stat"><b>15</b><span>people in the analytics org I ran: BI leads, data engineering, analysts</span></div>
-      <div class="stat"><b>$300M+</b><span>Ads marketplace the org's reporting, experimentation and KPIs sat behind</span></div>
-      <div class="stat"><b>1k+</b><span>company-wide users of the governed analytics layer for Engine and Ads</span></div>
-      <div class="stat"><b>$500M+</b><span>revenue the Audience Pinpointer product reached, at 60% of network share</span></div>
+    <h2>Query the platform, right here</h2>
+    <p class="lede">A snapshot of the platform's own tables, taken from BigQuery and loaded into your browser as SQLite. Same tables, same column names, same rules: SELECT only, 500 rows, every answer priced. Pick a question the product has actually been asked, or write your own SQL.</p>
+    <div id="console" data-db="data/construct.sqlite.gz">
+      <div class="qs" role="group" aria-label="Questions">
+        <button class="q" type="button" aria-pressed="true" data-q="
+-- How is Starlink's constellation arranged? (a saved query in the product)
+SELECT ROUND(inclination_deg) AS incl,
+       ROUND(mean_altitude_km, -1) AS alt_km,
+       COUNT(*) AS n
+FROM satellites
+WHERE object_name LIKE 'STARLINK%'
+GROUP BY 1, 2
+HAVING n >= 50
+ORDER BY n DESC">How is Starlink's constellation arranged?</button>
+        <button class="q" type="button" aria-pressed="false" data-q="
+-- How many launches has each provider flown, and how did they go?
+SELECT provider,
+       SUM(has_flown) AS flown,
+       SUM(has_flown AND status = 'Success') AS success,
+       SUM(has_flown AND status <> 'Success') AS anomalies,
+       MIN(CASE WHEN has_flown THEN launch_year END) AS first_year,
+       SUM(NOT has_flown) AS scheduled
+FROM launches
+GROUP BY provider
+ORDER BY flown DESC">Launches by provider</button>
+        <button class="q" type="button" aria-pressed="false" data-q="
+-- Which boosters have flown the most?
+SELECT serial_number, provider, config_name, flights, status,
+       substr(first_launch_date, 1, 10) AS first_flight,
+       substr(last_launch_date, 1, 10) AS last_flight
+FROM boosters
+ORDER BY flights DESC
+LIMIT 15">Most-flown boosters</button>
+        <button class="q" type="button" aria-pressed="false" data-q="
+-- Launch cadence by year. Scheduled rows carry a planned year, so has_flown matters.
+SELECT launch_year, provider, COUNT(*) AS launches
+FROM launches
+WHERE has_flown = 1
+GROUP BY 1, 2
+ORDER BY 1, 2">Cadence by year</button>
+        <button class="q" type="button" aria-pressed="false" data-q="
+-- How high are the GEO birds, really? Orbit class was assigned at ingest via Kepler.
+SELECT orbit_class, COUNT(*) AS objects,
+       ROUND(AVG(mean_altitude_km)) AS mean_alt_km,
+       ROUND(MIN(perigee_km)) AS lowest_perigee_km,
+       ROUND(AVG(period_min), 1) AS mean_period_min
+FROM satellites
+GROUP BY orbit_class
+ORDER BY objects DESC">Orbit classes</button>
+        <button class="q" type="button" aria-pressed="false" data-q="
+-- Which subgenres own the US top-free chart? MIN(rank) cannot rank a top-N list,
+-- because the feed caps at 100 per chart, so use chart points instead.
+SELECT subgenre,
+       COUNT(*) AS chart_slots,
+       SUM(101 - chart_rank) AS chart_points,
+       ROUND(AVG(avg_user_rating), 2) AS avg_rating
+FROM appstore_charts
+WHERE chart_country = 'us' AND chart_type = 'top-free' AND subgenre IS NOT NULL
+GROUP BY subgenre
+ORDER BY chart_points DESC">App Store subgenres</button>
+        <button class="q" type="button" aria-pressed="false" data-q="
+-- Which publishers hold the most chart slots across every country and chart?
+-- Group by artist_id, the stable key; artist_name is a display string.
+SELECT artist_id, MAX(artist_name) AS publisher,
+       COUNT(DISTINCT app_id) AS apps,
+       COUNT(DISTINCT chart_country) AS countries,
+       COUNT(*) AS chart_slots
+FROM appstore_charts
+GROUP BY artist_id
+ORDER BY chart_slots DESC
+LIMIT 20">Biggest publishers</button>
+        <button class="q" type="button" aria-pressed="false" data-q="
+-- Do paid games rate better than free ones? Per country, top-paid vs top-free.
+SELECT chart_country,
+       ROUND(AVG(CASE WHEN chart_type = 'top-paid' THEN avg_user_rating END), 2) AS paid_rating,
+       ROUND(AVG(CASE WHEN chart_type = 'top-free' THEN avg_user_rating END), 2) AS free_rating,
+       COUNT(DISTINCT app_id) AS apps
+FROM appstore_charts
+WHERE chart_genre = 'games'
+GROUP BY chart_country
+ORDER BY paid_rating DESC">Paid vs free ratings</button>
+        <button class="q" type="button" aria-pressed="false" data-q="
+-- What share of itch.io games run in the browser, by genre?
+SELECT genre, COUNT(DISTINCT game_id) AS games,
+       ROUND(100.0 * SUM(playable_in_browser) / COUNT(*), 1) AS pct_in_browser,
+       ROUND(100.0 * SUM(is_free) / COUNT(*), 1) AS pct_free
+FROM itch_games
+WHERE genre IS NOT NULL
+GROUP BY genre
+HAVING games >= 50
+ORDER BY games DESC">itch.io by genre</button>
+        <button class="q" type="button" aria-pressed="false" data-q="
+-- When did each source last land, and how many rows? The run log every number traces back to.
+SELECT source, COUNT(*) AS runs,
+       SUM(status = 'completed') AS completed,
+       SUM(rows_landed) AS rows_landed,
+       MAX(started_at) AS last_run
+FROM ingest_runs
+GROUP BY source
+ORDER BY last_run DESC">Ingest runs</button>
+        <button class="q" type="button" aria-pressed="false" data-q="
+-- The star schema is here too, as views. Vehicles by flights flown.
+SELECT vehicle_name, operator_name, flights_flown, flights_successful, debut_year
+FROM dim_vehicle
+WHERE flights_flown > 0
+ORDER BY flights_flown DESC">Vehicles (a mart view)</button>
+      </div>
+      <div class="console">
+        <div>
+          <div class="editor">
+            <div class="bar"><span>sql · ⌘/Ctrl + Enter runs</span><button class="btn primary small" id="run" type="button">Run</button></div>
+            <textarea id="sql" spellcheck="false" aria-label="SQL">-- How is Starlink's constellation arranged? (a saved query in the product)
+SELECT ROUND(inclination_deg) AS incl,
+       ROUND(mean_altitude_km, -1) AS alt_km,
+       COUNT(*) AS n
+FROM satellites
+WHERE object_name LIKE 'STARLINK%'
+GROUP BY 1, 2
+HAVING n >= 50
+ORDER BY n DESC</textarea>
+          </div>
+          <div class="status" id="status">press Run, or pick a question</div>
+          <div id="result"></div>
+          <div id="chart"></div>
+        </div>
+        <aside class="side">
+          <h3>tables in this snapshot</h3>
+          <div id="schema"><p class="empty">loads with the snapshot</p></div>
+        </aside>
+      </div>
+      <p class="rules">In the product this console is BigQuery, the question is written in plain English, the SQL is generated and checked, and every run is dry-run priced against a 100 MiB cap before it executes. Here the data is a snapshot exported on the day this page was built, so the numbers are real but not live.</p>
     </div>
   </div>
 </section>
 
-<section id="work">
+<section id="boards">
   <div class="wrap">
-    <h2 class="reveal">construct-analyst</h2>
-    <p class="lede reveal">A BigQuery analyst you drive from the terminal or a browser. A business question becomes validated SQL, the result is profiled before anyone builds a conclusion on it, and the answer ships as one self-contained page. It grew into a full platform: five public feeds ingested daily, three storage layers, a semantic layer that holds every definition once, a contract layer in dbt, and boards with 3D modes, all verified in a real browser.</p>
-    <div class="feature">
-      <div class="facts reveal">
-        <div class="fact"><b>932 tests</b><span>plus a real browser, because the tests were not enough</span></div>
-        <div class="fact"><b>100 MiB</b><span>per-query scan cap, enforced by a dry run before anything executes</span></div>
-        <div class="fact"><b>$0.00</b><span>billed to date, inside BigQuery's free tier</span></div>
-      </div>
-      <div class="frame reveal">
-        <div class="bar"><i></i><i></i><i></i><span>construct/</span></div>
-        <a class="shot" href="construct/" aria-label="Open the construct-analyst site with live boards">
-          <img src="construct/shots/climate-globe.jpg" width="1600" height="1000" alt="The climate globe board: countries coloured by the year their climate crossed +1 °C over their own 1951 to 1980 average">
-        </a>
-      </div>
-      <div class="links reveal">
-        <a class="btn primary" href="construct/">Open the site and live demos</a>
-        <a class="btn ghost" href="notes/">Read what building it taught me</a>
-        <span class="note">Python · BigQuery · dbt · three.js · Playwright</span>
-      </div>
+    <h2>Published boards</h2>
+    <p class="lede">Each one is a single file: inline SVG charts, an optional 3D mode, a trust score per tile, the SQL under a disclosure. The 3D pages carry their renderer and their data inside the page. <a href="construct/">Open them live, embedded in a page.</a></p>
+    <div class="bento">
+      <a class="card big" href="construct/demos/climate-globe.html">
+        <img src="construct/shots/climate-globe.jpg" width="1600" height="1000" alt="Climate globe: countries coloured by the year their climate crossed +1 °C over their own 1951 to 1980 average">
+        <div class="cap"><h3>When the Line Was Crossed</h3><p>183 countries, 1940 to 2025. Grey until a country's trailing decade passes +1 °C over its own baseline and stays there. Press play.</p><span class="src">Copernicus ERA5 via Our World in Data</span></div>
+      </a>
+      <a class="card" href="construct/demos/worlds-catch.html">
+        <img src="construct/shots/worlds-catch.jpg" width="1600" height="1000" alt="The World's Catch: a guided argument beside the chart it is read from">
+        <div class="cap"><h3>The World's Catch</h3><p>A board that argues. Every figure in the prose is derived from the tile beside it at build time.</p><span class="src">World Bank WDI</span></div>
+      </a>
+      <a class="card" href="construct/demos/orbit-explorer.html">
+        <img src="construct/shots/orbit-explorer.jpg" width="1600" height="1000" alt="Orbit Explorer: the active satellite catalogue drawn as orbital planes">
+        <div class="cap"><h3>Orbit Explorer</h3><p>16,301 active objects placed from their published elements. Drill by orbit and operator.</p><span class="src">Celestrak, one BigQuery scan</span></div>
+      </a>
+      <a class="card" href="construct/demos/economy-globe.html">
+        <img src="construct/shots/economy-globe.jpg" width="1600" height="1000" alt="World Economy globe with a year slider from 1996 to 2023">
+        <div class="cap"><h3>World Economy</h3><p>GDP, trade openness and exports, 1996 to 2023, one scale across every year.</p><span class="src">World Bank + WITS</span></div>
+      </a>
+      <a class="card" href="construct/demos/globe-explorer.html">
+        <img src="construct/shots/globe-explorer.jpg" width="1600" height="1000" alt="Globe Explorer showing earthquakes plotted at their real depth">
+        <div class="cap"><h3>Globe Explorer</h3><p>Quakes at real depth, volcanoes, air routes, launch pads. Seven layers, five APIs.</p><span class="src">USGS, Smithsonian, OpenFlights</span></div>
+      </a>
+      <a class="card" href="construct/demos/pipeline.html">
+        <img src="construct/shots/pipeline.jpg" width="1600" height="1000" alt="Pipeline Health board listing five sources, their runs and last failures">
+        <div class="cap"><h3>Pipeline Health</h3><p>Five sources, their cadence, their last failure verbatim, and the rows dropped between layers.</p><span class="src">meta.ingest_runs</span></div>
+      </a>
     </div>
+  </div>
+</section>
 
-    <div class="pair reveal">
+<section id="how">
+  <div class="wrap">
+    <h2>Most of the work in analysis is not writing the query</h2>
+    <p class="lede">It is knowing whether the table is what it claims, whether the scan will cost anything, and whether the number you are about to quote is real. Each of those is a layer here, not a habit.</p>
+    <div class="how">
+      <div class="layers">
+        <div class="layer"><div class="k">sources</div><div><h3>Five public feeds, fetched on a schedule</h3><p>Celestrak orbital elements, Launch Library, Apple App Store charts, itch.io, and reference dimensions. A launchd job runs them daily at 08:00.</p></div></div>
+        <div class="layer"><div class="k">l0_raw</div><div><h3>Append-only, with the raw body kept</h3><p>Every run lands as new rows and is recorded in a run table. Nothing is overwritten, so any figure traces back to the fetch that produced it.</p></div></div>
+        <div class="layer"><div class="k">l1_clean</div><div><h3>Deduplicated views under contract</h3><p>One row per business key, latest ingest wins. A separate dbt project holds 39 tests and 8 freshness checks over these views and nothing else.</p></div></div>
+        <div class="layer"><div class="k">l2_marts</div><div><h3>A star schema, built by one module</h3><p>Dimensions and facts with grain checks. Uniqueness is not correctness, so the semantic layer defines each measure once and the tests fail if a second copy appears.</p></div></div>
+        <div class="layer"><div class="k">boards</div><div><h3>One self-contained HTML page</h3><p>Inline SVG charts, optional 3D modes, a trust score per tile, and the SQL under a disclosure. No server, no CDN. Hand the file to anyone.</p></div></div>
+      </div>
       <div>
-        <h3>dbt-agent</h3>
-        <p>A dbt project that deliberately contains no models. It holds 39 tests and 8 freshness checks over the platform's clean layer as sources, so it is a statement of what must be true of the data and nothing else. The modelling stays in one place next door, with declared grains and deterministic keys.</p>
-      </div>
-      <div class="term">
-        <div class="bar"><span>models/sources.yml is the whole project</span><span>dbt-agent</span></div>
-<pre><span class="c"># As of 2026-08-17 this project is a contract layer,</span>
-<span class="c"># not a modelling layer. models/ contains sources.yml</span>
-<span class="c"># and nothing else. dbt run has nothing to run.</span>
+        <div class="term">
+          <div class="bar"><span>the guard refuses, it does not warn</span><span>bq_run.py</span></div>
+<pre><span class="k">$</span> python bq_run.py --estimate \
+    "SELECT subject FROM `bigquery-public-data.github_repos.commits` LIMIT 10"
 
-<span class="k">$</span> dbt test
-<span class="k">$</span> dbt source freshness
+<span class="err">BLOCK</span> · This query scans 11.3 GB, over the 1.0 GB confirmation threshold.
+Check the WHERE clause and partition filter before running it.
+Estimated cost at on-demand rates: $0.0687
+  reads bigquery-public-data.github_repos.commits</pre>
+        </div>
+        <div class="term">
+          <div class="bar"><span>tests, and a browser, because the tests were not enough</span><span>main</span></div>
+<pre><span class="k">$</span> python -m pytest -q
+....................................................................  [100%]
+<span class="ok">932 passed</span> in 5.58s
 
-<span class="c"># A daily job runs both after the ingests, and the</span>
-<span class="c"># results land on the pipeline board as contract history.</span></pre>
-      </div>
-    </div>
-  </div>
-</section>
+<span class="k">$</span> python tools/shot.py reports/worlds-catch.html --widths 1280,390
+2 shot(s) → reports/shots
+Now look at them. That is the whole point.
 
-<section id="side">
-  <div class="wrap">
-    <h2 class="reveal">Engineering, for the joy of it</h2>
-    <p class="lede reveal">Side projects I keep because the engineering underneath holds up: a physics engine written from first principles, a card game with a real test suite, and a deterministic disc simulation an AI plays by searching.</p>
-    <div class="trio reveal">
-      <div class="card big">
-        <img src="shots/playroom.jpg" width="1600" height="1000" alt="Playroom: a physics engine and rooms to play with it in">
-        <div class="cap"><h3>Playroom</h3><p>A 3D rigid-body physics engine in plain JavaScript, no library underneath: substepped sequential impulses with restitution and Coulomb friction, position correction with a 4 mm skin, per-island sleep via union-find, rope and rod joints, buoyant water. three.js only draws. 71 physics tests run headless in node; every room benchmarks above 500 fps except a generated 47-metre marble run.</p><span class="src">JavaScript · three.js · 71 physics tests</span></div>
-      </div>
-      <div class="card">
-        <img src="shots/broadsides.jpg" width="1600" height="1000" alt="Broadsides title screen">
-        <div class="cap"><h3>Broadsides</h3><p>Naval poker for two: play cards into lanes, the best five-card hand fires the broadside. Ten-leg voyages, saves that survive a reload, and a mobile audit that drove real touch events over the Chrome DevTools Protocol.</p><span class="src">196 commits · test suite + real-device tests</span></div>
-      </div>
-      <div class="card">
-        <img src="shots/crokinole.jpg" width="1600" height="1000" alt="Crokinole board mid-round">
-        <div class="cap"><h3>Crokinole</h3><p>The real 26-inch board's rules over a deterministic disc simulation. Board, physics, rules and AI are pure modules; the AI plays by simulating candidate shots.</p><span class="src">canvas · 7 test suites</span></div>
+<span class="k">$</span> python bq_run.py --usage
+2026-08 · 41 queries · 11.3 GB scanned
+1.11% of the 1 TiB free tier · <span class="ok">billable $0.00</span></pre>
+        </div>
       </div>
     </div>
   </div>
@@ -197,41 +371,26 @@
 
 <section id="notes-preview">
   <div class="wrap">
-    <h2 class="reveal">Notes from building the platform</h2>
-    <p class="lede reveal">Short, specific lessons, each one paid for with a wrong number that looked right. <a href="notes/">All twelve are here.</a></p>
-    <div class="notes reveal">
-      <a class="note-card" href="notes/#latest-partition"><span class="n">01</span><h3>The latest partition is not the widest one</h3><p>MAX(ingested_date) was wrong three times, for three different reasons. Incremental feeds put only the delta in the newest partition.</p></a>
+    <h2>Notes from building it</h2>
+    <p class="lede">Short, specific lessons, each one paid for with a number that looked right and was not. <a href="notes/">All twelve are here.</a></p>
+    <div class="notes">
+      <a class="note-card" href="notes/#latest-partition"><span class="n">01</span><h3>The latest partition is not the widest one</h3><p>MAX(ingested_date) was wrong three times, for three different reasons.</p></a>
       <a class="note-card" href="notes/#uniqueness"><span class="n">02</span><h3>Uniqueness is not correctness</h3><p>Two dimensions passed every grain check while reporting twice the flown launches that existed.</p></a>
       <a class="note-card" href="notes/#typed-number"><span class="n">07</span><h3>A hand-typed number fails the build</h3><p>After a board's thesis contradicted its own chart, every figure in a walkthrough is derived from the tile beside it.</p></a>
     </div>
   </div>
 </section>
 
-<section id="background">
-  <div class="wrap">
-    <h2 class="reveal">Experience</h2>
-    <p class="lede reveal">Analyst first, then eight years growing with Unity's ads and engine businesses, ending up running a fifteen-person analytics org. <a href="resume/">The full resume.</a></p>
-    <div class="timeline reveal">
-      <div class="row"><div class="y">2023 – 2026</div><div><h3>Unity, Director of Business Intelligence</h3><p>Led the analytics org behind a $300M+ Ads marketplace and an Engine suite on billions of devices. Launched the governed analytics layer adopted by 1k+ users, set the experimentation and causal-inference standards, shipped an LLM-powered self-serve analytics tool, and consolidated reporting onto BigQuery, dbt and Looker.</p></div></div>
-      <div class="row"><div class="y">2022</div><div><h3>Unity, Senior Manager, Business Intelligence</h3><p>GTM analytics for the Unity Cloud suite launch. Managed a multi-level BI team for Unity Ads across dashboards, experimentation and pipelines.</p></div></div>
-      <div class="row"><div class="y">2019 – 2021</div><div><h3>Unity, BI Manager, Demand</h3><p>Scaled Audience Pinpointer analytics to $500M+ revenue and 60% of network share. Built the Product BI team from scratch and shipped the event-stream datasets that cut analysis turnaround.</p></div></div>
-      <div class="row"><div class="y">2018</div><div><h3>Unity, BI Analyst, Strategic Partnerships</h3><p>$50M+ in net-new Unity Ads partnerships through tailored customer-insight products. A Supply incentive program that added 10% incremental gross revenue.</p></div></div>
-      <div class="row"><div class="y">2017</div><div><h3>Vungle, Performance Optimization Manager</h3><p>ROI reporting and QBRs for Demand partners. Looker and PostgreSQL dashboards for partner LTV and churn.</p></div></div>
-      <div class="row"><div class="y">2014 – 2017</div><div><h3>Silent Circle, then Vaco. Business Analyst</h3><p>The analyst years, and a 2016 detour through Dev Bootcamp for Ruby and Rails. The first commits on this GitHub account date from then.</p></div></div>
-    </div>
-  </div>
-</section>
-
-<section id="contact" class="about">
+<section id="about" class="about">
   <div class="wrap">
     <div>
-      <h2 class="reveal">Get in touch</h2>
-      <p class="lede reveal">Open to data leadership and analytics engineering roles, and to conversations about any of the work above. San Francisco Bay Area.</p>
+      <h2>Built by Michael Furlong</h2>
+      <p class="lede">Twelve years in analytics, eight of them building the data organization behind Unity's Ads marketplace and Engine, most recently as Director of Business Intelligence over a fifteen-person org. construct-analyst is the toolchain I wanted that whole time: the spend guard that actually stops, the profile that runs before the conclusion, and the board that can be handed over as one file. <a href="resume/">Read the resume.</a></p>
+      <div class="side-projects"><span class="muted">Elsewhere:</span> <a href="https://github.com/mfurlong64" rel="noopener">GitHub</a> <a href="https://www.linkedin.com/in/michael-furlong-9a116043" rel="noopener">LinkedIn</a> <a href="archive-2016/">the 2016 site this domain used to host</a></div>
     </div>
-    <div class="contact reveal">
+    <div class="contact">
       <div class="row2"><code id="email">mfurlong64@gmail.com</code><button type="button" data-copy="email">copy</button></div>
-      <div class="row2"><a href="https://www.linkedin.com/in/michael-furlong-9a116043" rel="noopener">linkedin.com/in/michael-furlong-9a116043</a></div>
-      <div class="row2"><a href="https://github.com/mfurlong64" rel="noopener">github.com/mfurlong64</a></div>
+      <div class="row2"><span class="muted">Open to data leadership and analytics engineering roles. San Francisco Bay Area.</span></div>
     </div>
   </div>
 </section>
@@ -240,10 +399,12 @@
 
 <footer>
   <div class="wrap">
-    <span>Michael Furlong</span>
-    <span>Every screenshot is a real capture of the thing it shows. <a href="archive-2016/">The 2016 site is kept here.</a></span>
+    <span>construct ANALYST · Michael Furlong</span>
+    <span>Every screenshot is a real capture, every terminal block real stdout, every table a real export.</span>
   </div>
 </footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
 <script src="assets/site.js"></script>
+<script src="assets/console.js"></script>
 </body>
 </html>
